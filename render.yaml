@@ -3,16 +3,26 @@ services:
     name: samtech
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app
+    startCommand: gunicorn -c gunicorn.conf.py run:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
+      - key: PORT
+        value: 10000
+      - key: WEB_CONCURRENCY
+        value: 4
       - key: DATABASE_URL
         fromDatabase:
           name: samtech_db
           property: connectionString
+    autoDeploy: true
+    healthCheckPath: /
+    numInstances: 1
+    domains:
+      - samtech.onrender.com
 
 databases:
   - name: samtech_db
     databaseName: samtech
     plan: free
+    ipAllowList: []
