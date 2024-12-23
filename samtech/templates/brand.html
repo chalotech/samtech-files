@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ brand.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>{{ brand.name }} Firmware</h1>
+        {% if not firmwares %}
+        <p class="text-muted">No firmware available yet.</p>
+        {% endif %}
+    </div>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <a href="{{ url_for('main.add_firmware', brand_id=brand.id) }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Firmware
+    </a>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% for firmware in firmwares %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            {% if firmware.icon_path %}
+            <img src="{{ url_for('static', filename=firmware.icon_path) }}" class="firmware-icon" alt="{{ firmware.model }} icon">
+            {% else %}
+            <div class="firmware-icon d-flex align-items-center justify-content-center bg-light">
+                <i class="fas fa-microchip fa-3x text-muted"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ firmware.model }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">Version: {{ firmware.version }}</h6>
+                <p class="card-text">{{ firmware.description }}</p>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="price-tag">KES {{ "%.2f"|format(firmware.price or 0) }}</span>
+                    <small class="text-muted">Downloads: {{ firmware.downloads }}</small>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if current_user.is_authenticated %}
+                        {% if firmware.price > 0 %}
+                            <a href="{{ url_for('main.pay', amount=firmware.price, firmware_id=firmware.id) }}" class="btn btn-primary">
+                                <i class="fas fa-credit-card"></i> Pay with M-Pesa
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('main.download_firmware', firmware_id=firmware.id) }}" class="btn btn-success">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login to Download
+                        </a>
+                    {% endif %}
+                    
+                    {% if current_user.is_authenticated and current_user.is_admin %}
+                    <div>
+                        <a href="{{ url_for('main.edit_firmware', firmware_id=firmware.id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('main.delete_firmware', firmware_id=firmware.id) }}" 
+                           class="btn btn-danger"
+                           onclick="return confirm('Are you sure you want to delete this firmware?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

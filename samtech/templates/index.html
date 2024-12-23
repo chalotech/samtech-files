@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center py-5 mb-5">
+    <h1>Welcome to Samtech Files</h1>
+    <p class="lead">Your trusted source for mobile device firmware</p>
+</div>
+
+<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for brand in brands %}
+    <div class="col">
+        <div class="card h-100 brand-card">
+            <img src="{{ url_for('static', filename=brand.icon_path) }}" class="card-img-top p-3" alt="{{ brand.name }}">
+            <div class="card-body text-center">
+                <h5 class="card-title">{{ brand.name }}</h5>
+                <a href="{{ url_for('main.brand', brand_id=brand.id) }}" class="btn btn-primary">View Firmware</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

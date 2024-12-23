@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Email{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Verify Email</h2>
+                <p class="text-center">Please check your email for the verification code.</p>
+                <form method="POST" action="{{ url_for('auth.verify_email') }}">
+                    <div class="mb-3">
+                        <label for="code" class="form-label">Verification Code</label>
+                        <input type="text" class="form-control" id="code" name="code" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Verify Email</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

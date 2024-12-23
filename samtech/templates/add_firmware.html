@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Add Firmware - {{ brand.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Add Firmware for {{ brand.name }}</h2>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Model</label>
+                        <input type="text" class="form-control" id="model" name="model" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="version" class="form-label">Version</label>
+                        <input type="text" class="form-control" id="version" name="version" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Price ($)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="firmware_file" class="form-label">Firmware File</label>
+                        <input type="file" class="form-control" id="firmware_file" name="firmware_file" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="firmware_icon" class="form-label">Firmware Icon</label>
+                        <input type="file" class="form-control" id="firmware_icon" name="firmware_icon" accept="image/*">
+                        <small class="text-muted">Upload an icon for this firmware (optional)</small>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Add Firmware</button>
+                        <a href="{{ url_for('main.brand', brand_id=brand.id) }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
