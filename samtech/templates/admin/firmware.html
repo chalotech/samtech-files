@@ -75,7 +75,7 @@
         <div class="modal-content">
             <form action="{{ url_for('admin.add_firmware') }}" method="POST" enctype="multipart/form-data">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addFirmwareModalLabel">Add New Firmware</h5>
+                    <h5 class="modal-title" id="addFirmwareModalLabel">Add Firmware</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -94,7 +94,7 @@
                                 <select class="form-select" id="brand_id" name="brand_id" required>
                                     <option value="">Select Brand</option>
                                     {% for brand in brands %}
-                                    <option value="{{ brand.id }}">{{ brand.name }}</option>
+                                        <option value="{{ brand.id }}">{{ brand.name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -109,8 +109,9 @@
                                 <input type="file" class="form-control" id="firmware_file" name="firmware_file" required>
                             </div>
                             <div class="mb-3">
-                                <label for="image" class="form-label">Image (Optional)</label>
+                                <label for="image" class="form-label">Image</label>
                                 <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                <small class="form-text text-muted">Optional</small>
                             </div>
                         </div>
                     </div>
@@ -119,8 +120,9 @@
                         <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="features" class="form-label">Features (Optional)</label>
+                        <label for="features" class="form-label">Features</label>
                         <textarea class="form-control" id="features" name="features" rows="3"></textarea>
+                        <small class="form-text text-muted">Optional</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -184,8 +186,9 @@
                         <textarea class="form-control" id="edit_description" name="description" rows="3" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="edit_features" class="form-label">Features (Optional)</label>
+                        <label for="edit_features" class="form-label">Features</label>
                         <textarea class="form-control" id="edit_features" name="features" rows="3"></textarea>
+                        <small class="form-text text-muted">Optional</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -219,7 +222,6 @@
     </div>
 </div>
 
-{% block scripts %}
 <script>
 function editFirmware(id) {
     fetch(`/admin/firmware/${id}`)
@@ -268,5 +270,4 @@ function showAlert(type, message) {
     }, 5000);
 }
 </script>
-{% endblock %}
 {% endblock %}

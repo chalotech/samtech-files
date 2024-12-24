@@ -48,7 +48,7 @@
                         <small class="text-muted">Added {{ brand.created_at.strftime('%Y-%m-%d') }}</small>
                         <div class="btn-group">
                             <button type="button" class="btn btn-sm btn-outline-primary"
-                                    onclick="editBrand({{ brand.id }}, '{{ brand.name }}', '{{ brand.description or '' }}')">
+                                    onclick="editBrand({{ brand.id }})">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-danger"
@@ -83,9 +83,8 @@
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="logo" class="form-label">Brand Logo</label>
+                        <label for="logo" class="form-label">Logo</label>
                         <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
-                        <div class="form-text">Upload the official brand logo (PNG, JPG, or SVG)</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -116,9 +115,9 @@
                         <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="edit_logo" class="form-label">Brand Logo</label>
+                        <label for="edit_logo" class="form-label">Logo</label>
                         <input type="file" class="form-control" id="edit_logo" name="logo" accept="image/*">
-                        <div class="form-text">Upload a new logo or leave empty to keep the current one</div>
+                        <small class="form-text text-muted">Leave empty to keep current logo</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -140,12 +139,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to delete <strong id="deleteBrandName"></strong>?</p>
+                    <p>Are you sure you want to delete <span id="deleteBrandName"></span>?</p>
                     <p class="text-danger">This action cannot be undone.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete Brand</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
                 </div>
             </form>
         </div>
@@ -154,19 +153,47 @@
 
 {% block scripts %}
 <script>
-function editBrand(id, name, description) {
-    document.getElementById('edit_name').value = name;
-    document.getElementById('edit_description').value = description;
-    document.getElementById('editBrandForm').action = "{{ url_for('admin.manage_brands') }}" + "/" + id + "/edit";
-    var editModal = new bootstrap.Modal(document.getElementById('editBrandModal'));
-    editModal.show();
+function editBrand(id) {
+    fetch(`/admin/brand/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('edit_name').value = data.name;
+            document.getElementById('edit_description').value = data.description || '';
+            
+            const form = document.getElementById('editBrandForm');
+            form.action = `/admin/brand/${id}/edit`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editBrandModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Failed to load brand details');
+        });
 }
 
 function deleteBrand(id, name) {
     document.getElementById('deleteBrandName').textContent = name;
-    document.getElementById('deleteBrandForm').action = "{{ url_for('admin.manage_brands') }}" + "/" + id + "/delete";
-    var deleteModal = new bootstrap.Modal(document.getElementById('deleteBrandModal'));
-    deleteModal.show();
+    const form = document.getElementById('deleteBrandForm');
+    form.action = `/admin/brand/${id}/delete`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteBrandModal'));
+    modal.show();
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
 }
 </script>
 {% endblock %}

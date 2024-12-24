@@ -83,7 +83,7 @@ class Firmware(db.Model):
     payments = db.relationship('Payment', backref='firmware', lazy=True)
     downloads = db.relationship('DownloadToken', backref='firmware', lazy=True)
 
-    def __init__(self, name, version, description, filename, size, price, brand_id, creator_id, features=None, image=None, is_active=True):
+    def __init__(self, name, version, description, filename, size, price, brand_id, creator_id, features=None, image=None):
         self.name = name
         self.version = version
         self.description = description
@@ -94,7 +94,7 @@ class Firmware(db.Model):
         self.price = price
         self.brand_id = brand_id
         self.creator_id = creator_id
-        self.is_active = is_active
+        self.is_active = True
 
 class Payment(db.Model):
     __tablename__ = 'payments'

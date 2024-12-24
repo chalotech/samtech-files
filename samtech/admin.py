@@ -369,7 +369,7 @@ def manage_firmware():
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('main.index'))
     
-    firmwares = Firmware.query.order_by(Firmware.name).all()
+    firmwares = Firmware.query.order_by(Firmware.created_at.desc()).all()
     brands = Brand.query.order_by(Brand.name).all()
     return render_template('admin/firmware.html', firmwares=firmwares, brands=brands)
 
@@ -401,6 +401,9 @@ def add_firmware():
         if not firmware_file:
             flash('Firmware file is required.', 'error')
             return redirect(url_for('admin.manage_firmware'))
+        
+        # Create upload directory if it doesn't exist
+        os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
         
         # Save firmware file
         firmware_filename = secure_filename(firmware_file.filename)
@@ -437,8 +440,7 @@ def add_firmware():
             size=os.path.getsize(firmware_path),
             price=float(price),
             brand_id=int(brand_id),
-            creator_id=current_user.id,
-            is_active=True
+            creator_id=current_user.id
         )
         
         db.session.add(firmware)
@@ -466,17 +468,28 @@ def edit_firmware(id):
     firmware = Firmware.query.get_or_404(id)
     
     try:
+        # Validate required fields
+        name = request.form.get('name')
+        version = request.form.get('version')
+        description = request.form.get('description')
+        brand_id = request.form.get('brand_id')
+        price = request.form.get('price')
+        
+        if not all([name, version, description, brand_id, price]):
+            flash('All required fields must be filled.', 'error')
+            return redirect(url_for('admin.manage_firmware'))
+        
         # Update basic info
-        firmware.name = request.form.get('name')
-        firmware.version = request.form.get('version')
-        firmware.description = request.form.get('description')
+        firmware.name = name
+        firmware.version = version
+        firmware.description = description
         firmware.features = request.form.get('features')
-        firmware.brand_id = int(request.form.get('brand_id'))
-        firmware.price = float(request.form.get('price'))
+        firmware.brand_id = int(brand_id)
+        firmware.price = float(price)
         
         # Handle firmware file update
         firmware_file = request.files.get('firmware_file')
-        if firmware_file:
+        if firmware_file and firmware_file.filename:
             # Delete old file
             old_firmware_path = os.path.join(current_app.config['UPLOAD_FOLDER'], firmware.filename)
             if os.path.exists(old_firmware_path):
@@ -493,7 +506,7 @@ def edit_firmware(id):
         
         # Handle image update
         image = request.files.get('image')
-        if image:
+        if image and image.filename:
             # Delete old image
             if firmware.image:
                 old_image_path = os.path.join(current_app.static_folder, firmware.image)
@@ -561,7 +574,6 @@ def delete_firmware(id):
 @admin.route('/firmware/<int:id>')
 @login_required
 def get_firmware(id):
-    """Get firmware details for editing"""
     if not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
