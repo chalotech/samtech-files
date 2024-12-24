@@ -94,8 +94,8 @@ def edit_brand(id):
         return redirect(url_for('main.index'))
     
     brand = Brand.query.get_or_404(id)
-    name = request.form.get('name')
-    description = request.form.get('description')
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
     logo = request.files.get('logo')
     
     if not name:
@@ -117,7 +117,10 @@ def edit_brand(id):
                 if brand.logo:
                     old_logo_path = os.path.join(current_app.static_folder, brand.logo)
                     if os.path.exists(old_logo_path):
-                        os.remove(old_logo_path)
+                        try:
+                            os.remove(old_logo_path)
+                        except Exception as e:
+                            current_app.logger.error(f"Error deleting old logo: {str(e)}")
                 brand.logo = new_logo_path
         
         brand.name = name
@@ -380,54 +383,85 @@ def add_firmware():
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('main.index'))
     
+    firmware_path = None
+    image_path = None
+    
     try:
         # Get form data
-        name = request.form.get('name')
-        version = request.form.get('version')
-        description = request.form.get('description')
-        features = request.form.get('features')
+        name = request.form.get('name', '').strip()
+        version = request.form.get('version', '').strip()
+        description = request.form.get('description', '').strip()
+        features = request.form.get('features', '').strip()
         brand_id = request.form.get('brand_id')
-        price = request.form.get('price')
+        price = request.form.get('price', '0').strip()
         
         # Validate required fields
-        if not all([name, version, description, brand_id, price]):
-            flash('All required fields must be filled.', 'error')
+        if not all([name, version, description, brand_id]):
+            flash('Name, version, description and brand are required.', 'error')
+            return redirect(url_for('admin.manage_firmware'))
+        
+        try:
+            price = float(price)
+            if price < 0:
+                raise ValueError("Price cannot be negative")
+        except ValueError:
+            flash('Invalid price value.', 'error')
+            return redirect(url_for('admin.manage_firmware'))
+        
+        try:
+            brand_id = int(brand_id)
+        except ValueError:
+            flash('Invalid brand selected.', 'error')
             return redirect(url_for('admin.manage_firmware'))
         
         # Handle file uploads
         firmware_file = request.files.get('firmware_file')
         image = request.files.get('image')
         
-        if not firmware_file:
+        if not firmware_file or not firmware_file.filename:
             flash('Firmware file is required.', 'error')
             return redirect(url_for('admin.manage_firmware'))
         
         # Create upload directory if it doesn't exist
-        os.makedirs(current_app.config['UPLOAD_FOLDER'], exist_ok=True)
+        upload_dir = current_app.config.get('UPLOAD_FOLDER')
+        if not upload_dir:
+            flash('Upload directory not configured.', 'error')
+            return redirect(url_for('admin.manage_firmware'))
+        
+        os.makedirs(upload_dir, exist_ok=True)
         
         # Save firmware file
         firmware_filename = secure_filename(firmware_file.filename)
         unique_firmware_filename = f"{uuid.uuid4()}_{firmware_filename}"
-        firmware_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_firmware_filename)
+        firmware_path = os.path.join(upload_dir, unique_firmware_filename)
         firmware_file.save(firmware_path)
         
         # Save image if provided
-        image_path = None
-        if image:
-            image_filename = secure_filename(image.filename)
-            unique_image_filename = f"{uuid.uuid4()}_{image_filename}"
-            images_dir = os.path.join(current_app.static_folder, 'images', 'firmware')
-            os.makedirs(images_dir, exist_ok=True)
-            image_path = os.path.join(images_dir, unique_image_filename)
-            
-            # Optimize image
-            img = Image.open(image)
-            if img.mode in ('RGBA', 'P'):
-                img = img.convert('RGB')
-            if max(img.size) > 800:
-                img.thumbnail((800, 800))
-            img.save(image_path, optimize=True, quality=85)
-            image_path = os.path.join('images', 'firmware', unique_image_filename)
+        if image and image.filename:
+            try:
+                image_filename = secure_filename(image.filename)
+                unique_image_filename = f"{uuid.uuid4()}_{image_filename}"
+                images_dir = os.path.join(current_app.static_folder, 'images', 'firmware')
+                os.makedirs(images_dir, exist_ok=True)
+                
+                temp_image_path = os.path.join(images_dir, unique_image_filename)
+                image.save(temp_image_path)
+                
+                # Optimize image
+                with Image.open(temp_image_path) as img:
+                    if img.mode in ('RGBA', 'P'):
+                        img = img.convert('RGB')
+                    if max(img.size) > 800:
+                        img.thumbnail((800, 800))
+                    img.save(temp_image_path, optimize=True, quality=85)
+                
+                image_path = os.path.join('images', 'firmware', unique_image_filename)
+            except Exception as e:
+                current_app.logger.error(f"Error processing image: {str(e)}")
+                if os.path.exists(temp_image_path):
+                    os.remove(temp_image_path)
+                flash('Error processing image. Firmware will be added without an image.', 'warning')
+                image_path = None
         
         # Create firmware record
         firmware = Firmware(
@@ -438,8 +472,8 @@ def add_firmware():
             filename=unique_firmware_filename,
             image=image_path,
             size=os.path.getsize(firmware_path),
-            price=float(price),
-            brand_id=int(brand_id),
+            price=price,
+            brand_id=brand_id,
             creator_id=current_user.id
         )
         
@@ -451,10 +485,19 @@ def add_firmware():
         db.session.rollback()
         current_app.logger.error(f"Error adding firmware: {str(e)}")
         flash('An error occurred while adding the firmware.', 'error')
-        if os.path.exists(firmware_path):
-            os.remove(firmware_path)
+        
+        # Clean up files on error
+        if firmware_path and os.path.exists(firmware_path):
+            try:
+                os.remove(firmware_path)
+            except Exception as e:
+                current_app.logger.error(f"Error removing firmware file: {str(e)}")
+        
         if image_path and os.path.exists(os.path.join(current_app.static_folder, image_path)):
-            os.remove(os.path.join(current_app.static_folder, image_path))
+            try:
+                os.remove(os.path.join(current_app.static_folder, image_path))
+            except Exception as e:
+                current_app.logger.error(f"Error removing image file: {str(e)}")
     
     return redirect(url_for('admin.manage_firmware'))
 
