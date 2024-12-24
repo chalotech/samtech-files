@@ -440,7 +440,8 @@ def add_firmware():
             size=os.path.getsize(firmware_path),
             price=float(price),
             brand_id=int(brand_id),
-            creator_id=current_user.id
+            creator_id=current_user.id,
+            is_active=True
         )
         
         db.session.add(firmware)
@@ -451,6 +452,10 @@ def add_firmware():
         db.session.rollback()
         current_app.logger.error(f"Error adding firmware: {str(e)}")
         flash('An error occurred while adding the firmware.', 'error')
+        if os.path.exists(firmware_path):
+            os.remove(firmware_path)
+        if image_path and os.path.exists(os.path.join(current_app.static_folder, image_path)):
+            os.remove(os.path.join(current_app.static_folder, image_path))
     
     return redirect(url_for('admin.manage_firmware'))
 
