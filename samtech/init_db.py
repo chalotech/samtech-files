@@ -13,9 +13,9 @@ def init_db(app):
         if not admin:
             app.logger.info("Creating admin user...")
             admin = User(
-                email="admin@samtech.com",
-                username="admin",
-                password=generate_password_hash("admin123", method='sha256'),
+                email="samtech@gmail.com",
+                username="samtech",
+                password=generate_password_hash("samuel", method='sha256'),
                 is_admin=True,
                 email_verified=True,
                 created_at=datetime.utcnow()
@@ -30,23 +30,28 @@ def init_db(app):
             default_brands = [
                 {
                     "name": "Samsung",
-                    "description": "Samsung mobile phones and tablets"
+                    "description": "Samsung mobile phones and tablets",
+                    "icon_path": "images/brands/samsung.png"
                 },
                 {
                     "name": "iPhone",
-                    "description": "Apple iPhones and iOS devices"
+                    "description": "Apple iPhones and iOS devices",
+                    "icon_path": "images/brands/iphone.png"
                 },
                 {
                     "name": "Tecno",
-                    "description": "Tecno mobile devices"
+                    "description": "Tecno mobile devices",
+                    "icon_path": "images/brands/tecno.png"
                 },
                 {
                     "name": "Infinix",
-                    "description": "Infinix smartphones"
+                    "description": "Infinix smartphones",
+                    "icon_path": "images/brands/infinix.png"
                 },
                 {
                     "name": "Oppo",
-                    "description": "Oppo smartphones and accessories"
+                    "description": "Oppo smartphones and accessories",
+                    "icon_path": "images/brands/oppo.png"
                 }
             ]
             
@@ -54,6 +59,7 @@ def init_db(app):
                 brand = Brand(
                     name=brand_data["name"],
                     description=brand_data["description"],
+                    icon_path=brand_data["icon_path"],
                     created_at=datetime.utcnow()
                 )
                 db.session.add(brand)
