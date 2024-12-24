@@ -52,6 +52,8 @@ class User(UserMixin, db.Model):
     is_verified = db.Column(db.Boolean, default=False)
     verification_code = db.Column(db.String(32), unique=True, nullable=True)
     verification_code_expiry = db.Column(db.DateTime, nullable=True)
+    reset_token = db.Column(db.String(32), unique=True, nullable=True)
+    reset_token_expiry = db.Column(db.DateTime, nullable=True)
     last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
