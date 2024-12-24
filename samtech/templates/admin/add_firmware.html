@@ -5,47 +5,96 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h3 class="mb-0">Add New Firmware</h3>
                 </div>
                 <div class="card-body">
+                    <!-- Gmail Drive Instructions -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">How to add firmware:</h5>
+                        <ol class="mb-0">
+                            <li>Upload your firmware file to Google Drive</li>
+                            <li>Right-click the file and select "Share"</li>
+                            <li>Click "Get link" and set access to "Anyone with the link"</li>
+                            <li>Click "Copy link" and paste it in the Gmail Drive Link field below</li>
+                        </ol>
+                    </div>
+
                     <form method="POST" enctype="multipart/form-data">
                         {{ form.hidden_tag() }}
                         
-                        <div class="mb-3">
-                            <label for="brand" class="form-label">Brand</label>
-                            {{ form.brand(class="form-select") }}
-                            {% if form.brand.errors %}
+                        <!-- Gmail Drive Link Field - Prominently Displayed -->
+                        <div class="mb-4">
+                            <label for="gmail_link" class="form-label fw-bold">Gmail Drive Link</label>
+                            {{ form.gmail_link(class="form-control form-control-lg", placeholder="Paste your Google Drive sharing link here") }}
+                            <div class="form-text">
+                                Example: https://drive.google.com/file/d/your-file-id/view?usp=sharing
+                            </div>
+                            {% if form.gmail_link.errors %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.brand.errors %}
+                                {% for error in form.gmail_link.errors %}
                                     {{ error }}
                                 {% endfor %}
                             </div>
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            <label for="model" class="form-label">Model</label>
-                            {{ form.model(class="form-control") }}
-                            {% if form.model.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.model.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="brand" class="form-label">Brand</label>
+                                    {{ form.brand(class="form-select") }}
+                                    {% if form.brand.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.brand.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                            {% endif %}
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="model" class="form-label">Model</label>
+                                    {{ form.model(class="form-control") }}
+                                    {% if form.model.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.model.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="version" class="form-label">Version</label>
-                            {{ form.version(class="form-control") }}
-                            {% if form.version.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.version.errors %}
-                                    {{ error }}
-                                {% endfor %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="version" class="form-label">Version</label>
+                                    {{ form.version(class="form-control") }}
+                                    {% if form.version.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.version.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </div>
-                            {% endif %}
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="price" class="form-label">Price (KES)</label>
+                                    {{ form.price(class="form-control") }}
+                                    {% if form.price.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.price.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -60,22 +109,10 @@
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            <label for="gmail_link" class="form-label">Gmail Drive Link</label>
-                            {{ form.gmail_link(class="form-control") }}
-                            <small class="text-muted">Paste the Gmail Drive sharing link for the firmware file</small>
-                            {% if form.gmail_link.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.gmail_link.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label for="icon" class="form-label">Icon (Optional)</label>
                             {{ form.icon(class="form-control") }}
+                            <div class="form-text">Upload an icon image for the firmware (optional)</div>
                             {% if form.icon.errors %}
                             <div class="invalid-feedback d-block">
                                 {% for error in form.icon.errors %}
@@ -85,20 +122,8 @@
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            <label for="price" class="form-label">Price (KES)</label>
-                            {{ form.price(class="form-control") }}
-                            {% if form.price.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.price.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Add Firmware</button>
+                            <button type="submit" class="btn btn-primary btn-lg">Add Firmware</button>
                             <a href="{{ url_for('admin.manage_firmwares') }}" class="btn btn-secondary">Cancel</a>
                         </div>
                     </form>
@@ -107,4 +132,24 @@
         </div>
     </div>
 </div>
+
+<!-- Add some CSS for better styling -->
+{% block styles %}
+<style>
+.card {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+.alert-info {
+    background-color: #e8f4f8;
+    border-color: #b8e7f3;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+.btn-lg {
+    padding: 0.75rem 1.25rem;
+}
+</style>
+{% endblock %}
 {% endblock %}
