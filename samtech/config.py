@@ -25,18 +25,19 @@ class Config:
         # Handle template string error
         if DATABASE_URL.startswith('${'):
             print("Error: DATABASE_URL appears to be a template string", file=sys.stderr)
-            DATABASE_URL = 'sqlite:///samtech.db'
+            DATABASE_URL = None
         # Handle postgres:// URLs
         elif DATABASE_URL.startswith('postgres://'):
             DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
             print("Converted postgres:// to postgresql://", file=sys.stderr)
-        
+    
+    # Set the final database URL
+    if DATABASE_URL:
         SQLALCHEMY_DATABASE_URI = DATABASE_URL
         print(f"Using database type: {SQLALCHEMY_DATABASE_URI.split(':')[0]}", file=sys.stderr)
     else:
-        print("No DATABASE_URL found, using SQLite", file=sys.stderr)
-        DATABASE_URL = 'sqlite:///samtech.db'
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+        print("No valid DATABASE_URL found, using SQLite", file=sys.stderr)
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///samtech.db'
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {

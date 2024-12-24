@@ -54,10 +54,10 @@ class Firmware(db.Model):
                           backref='firmware', 
                           lazy=True, 
                           cascade='all, delete-orphan')
-    download_links = relationship('DownloadLink',
-                                backref='firmware',
-                                lazy=True,
-                                cascade='all, delete-orphan')
+    download_tokens = relationship('DownloadToken',
+                                 backref='firmware',
+                                 lazy=True,
+                                 cascade='all, delete-orphan')
 
 class Payment(db.Model):
     __tablename__ = 'payments'
@@ -72,47 +72,6 @@ class Payment(db.Model):
     completed_at = db.Column(db.DateTime)
     withdrawn = db.Column(db.Boolean, default=False, nullable=False)
 
-class DownloadLink(db.Model):
-    __tablename__ = 'download_links'
-    id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(100), unique=True, nullable=False)
-    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id', ondelete='CASCADE'), nullable=False)
-    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id', ondelete='CASCADE'), nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    used_at = db.Column(db.DateTime)
-    
-    @staticmethod
-    def generate_token():
-        return secrets.token_urlsafe(32)
-    
-    @staticmethod
-    def create_for_payment(payment, expiry_hours=24):
-        token = DownloadLink.generate_token()
-        expires_at = datetime.utcnow() + timedelta(hours=expiry_hours)
-        
-        link = DownloadLink(
-            token=token,
-            firmware_id=payment.firmware_id,
-            payment_id=payment.id,
-            expires_at=expires_at
-        )
-        db.session.add(link)
-        db.session.commit()
-        return link
-    
-    def is_valid(self):
-        return (
-            not self.used and
-            datetime.utcnow() <= self.expires_at
-        )
-    
-    def mark_as_used(self):
-        self.used = True
-        self.used_at = datetime.utcnow()
-        db.session.commit()
-
 class Withdrawal(db.Model):
     __tablename__ = 'withdrawals'
     id = db.Column(db.Integer, primary_key=True)
@@ -122,3 +81,44 @@ class Withdrawal(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     completed_at = db.Column(db.DateTime)
+
+class DownloadToken(db.Model):
+    """Model for one-time download tokens"""
+    __tablename__ = 'download_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id', ondelete='CASCADE'), nullable=False)
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id', ondelete='CASCADE'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    used_at = db.Column(db.DateTime)
+    
+    @staticmethod
+    def generate_token(firmware_id, payment_id, expires_in=timedelta(hours=24)):
+        """Generate a new download token"""
+        token = DownloadToken(
+            token=secrets.token_urlsafe(32),
+            firmware_id=firmware_id,
+            payment_id=payment_id,
+            expires_at=datetime.utcnow() + expires_in
+        )
+        db.session.add(token)
+        db.session.commit()
+        return token
+    
+    def is_valid(self):
+        """Check if token is valid"""
+        return (
+            not self.used and
+            datetime.utcnow() <= self.expires_at
+        )
+    
+    def use_token(self):
+        """Mark token as used"""
+        if self.is_valid():
+            self.used = True
+            self.used_at = datetime.utcnow()
+            db.session.commit()
+            return True
+        return False
