@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ firmware.model }} - Firmware Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.brand', brand_id=firmware.brand_id) }}">{{ firmware.brand.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ firmware.model }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                {% if firmware.icon_path %}
+                <img src="{{ url_for('static', filename=firmware.icon_path) }}" 
+                     class="card-img-top" alt="{{ firmware.model }} icon"
+                     style="height: 300px; object-fit: contain; padding: 1rem;">
+                {% else %}
+                <div class="text-center p-5 bg-light">
+                    <i class="fas fa-microchip fa-5x text-muted"></i>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">{{ firmware.model }}</h2>
+                    <h4 class="card-subtitle mb-3 text-muted">Version {{ firmware.version }}</h4>
+                    
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p class="card-text">{{ firmware.description or 'No description available.' }}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Details</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Brand:</strong> {{ firmware.brand.name }}</li>
+                            <li><strong>Downloads:</strong> {{ firmware.downloads }}</li>
+                            <li><strong>Added:</strong> {{ firmware.created_at.strftime('%B %d, %Y') }}</li>
+                            <li><strong>Price:</strong> KES {{ "%.2f"|format(firmware.price) }}</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-4">
+                        {% if current_user.is_authenticated %}
+                            {% if firmware.price > 0 %}
+                                <a href="{{ url_for('main.pay', amount=firmware.price, firmware_id=firmware.id) }}" 
+                                   class="btn btn-primary btn-lg">
+                                    <i class="fas fa-credit-card"></i> Pay with M-Pesa
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('main.download_firmware', firmware_id=firmware.id) }}" 
+                                   class="btn btn-success btn-lg">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            {% endif %}
+                            
+                            {% if current_user.is_admin %}
+                                <div class="mt-3">
+                                    <a href="{{ url_for('main.edit_firmware', firmware_id=firmware.id) }}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i> Edit Firmware
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 
+                                Please <a href="{{ url_for('auth.login') }}">log in</a> to download this firmware.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
