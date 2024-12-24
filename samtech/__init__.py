@@ -67,15 +67,23 @@ def create_app():
     
     # Register blueprints
     from .auth import auth as auth_blueprint
-    app.register_blueprint(auth_blueprint)
-    
-    from .main import main as main_blueprint
-    app.register_blueprint(main_blueprint)
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
     
     from .mpesa import mpesa as mpesa_blueprint
     app.register_blueprint(mpesa_blueprint, url_prefix='/mpesa')
     
+    from .firmware import firmware as firmware_blueprint
+    app.register_blueprint(firmware_blueprint, url_prefix='/firmware')
+    
     from .admin import admin as admin_blueprint
-    app.register_blueprint(admin_blueprint)
+    app.register_blueprint(admin_blueprint, url_prefix='/admin')
+    
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+        
+        # Create admin user if not exists
+        from .init_db import create_admin_user
+        create_admin_user()
     
     return app

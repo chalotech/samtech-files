@@ -42,9 +42,10 @@ def stk_push():
         # Validate required fields
         required = ['phone_number', 'amount', 'firmware_id']
         if not all(key in data for key in required):
+            logger.error(f"Missing required fields in STK push request: {data}")
             return jsonify({
                 'status': 'error',
-                'message': 'Missing required fields'
+                'message': 'Missing required fields. Required: phone_number, amount, firmware_id'
             }), 400
         
         # Format phone number
@@ -55,11 +56,31 @@ def stk_push():
             phone = '254' + phone[1:]
         elif not phone.startswith('254'):
             phone = '254' + phone
+            
+        # Validate phone number format
+        if not phone.isdigit() or len(phone) != 12:
+            logger.error(f"Invalid phone number format: {phone}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid phone number format. Use format: 254XXXXXXXXX'
+            }), 400
+
+        # Validate amount
+        try:
+            amount = float(data['amount'])
+            if amount <= 0:
+                raise ValueError("Amount must be positive")
+        except (ValueError, TypeError):
+            logger.error(f"Invalid amount: {data['amount']}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid amount. Amount must be a positive number'
+            }), 400
         
         # Create payment record
         payment = Payment(
             reference=f"FW{data['firmware_id']}_{current_user.id}",
-            amount=data['amount'],
+            amount=amount,
             phone_number=phone,
             firmware_id=data['firmware_id'],
             user_id=current_user.id
@@ -70,9 +91,10 @@ def stk_push():
         # Get access token
         access_token = get_access_token()
         if not access_token:
+            logger.error("Failed to get M-Pesa access token")
             return jsonify({
                 'status': 'error',
-                'message': 'Could not get M-Pesa access token'
+                'message': 'Could not initiate payment. Please try again later.'
             }), 500
         
         # Prepare STK Push request
@@ -81,12 +103,14 @@ def stk_push():
             'Content-Type': 'application/json'
         }
         
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        
         payload = {
             'BusinessShortCode': current_app.config['MPESA_SHORTCODE'],
             'Password': current_app.config['MPESA_PASSWORD'],
-            'Timestamp': datetime.now().strftime('%Y%m%d%H%M%S'),
+            'Timestamp': timestamp,
             'TransactionType': 'CustomerPayBillOnline',
-            'Amount': int(float(data['amount'])),
+            'Amount': int(amount),
             'PartyA': phone,
             'PartyB': current_app.config['MPESA_SHORTCODE'],
             'PhoneNumber': phone,
@@ -95,6 +119,8 @@ def stk_push():
             'TransactionDesc': f'Firmware Payment - {payment.reference}'
         }
         
+        logger.info(f"Initiating STK push for payment {payment.reference}")
+        
         # Make STK Push request
         response = requests.post(
             'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
@@ -102,34 +128,77 @@ def stk_push():
             json=payload,
             timeout=30
         )
-        response.raise_for_status()
         
-        # Update payment with checkout request ID
-        result = response.json()
-        if result.get('ResponseCode') == '0':
-            payment.mpesa_request = result.get('CheckoutRequestID')
-            db.session.commit()
-            
+        if response.status_code != 200:
+            logger.error(f"M-Pesa API error: {response.text}")
             return jsonify({
-                'status': 'success',
-                'message': 'STK Push sent successfully',
-                'data': {
-                    'checkout_request_id': result.get('CheckoutRequestID'),
-                    'payment_id': payment.id
-                }
-            })
+                'status': 'error',
+                'message': 'Failed to initiate payment. Please try again.'
+            }), 500
+            
+        response_data = response.json()
+        if response_data.get('ResponseCode') != '0':
+            logger.error(f"M-Pesa STK push failed: {response_data}")
+            return jsonify({
+                'status': 'error',
+                'message': response_data.get('ResponseDescription', 'Failed to initiate payment')
+            }), 400
+            
+        # Update payment record with CheckoutRequestID
+        payment.checkout_request_id = response_data.get('CheckoutRequestID')
+        db.session.commit()
         
         return jsonify({
+            'status': 'success',
+            'message': 'Payment initiated. Please check your phone to complete payment.',
+            'data': {
+                'reference': payment.reference,
+                'checkout_request_id': payment.checkout_request_id
+            }
+        })
+        
+    except requests.RequestException as e:
+        logger.error(f"Network error during STK push: {str(e)}")
+        return jsonify({
             'status': 'error',
-            'message': 'STK Push failed',
-            'data': result
-        }), 400
+            'message': 'Network error. Please try again.'
+        }), 500
+    except Exception as e:
+        logger.error(f"Unexpected error during STK push: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred. Please try again.'
+        }), 500
+
+@mpesa.route('/status/<reference>', methods=['GET'])
+@login_required
+def payment_status(reference):
+    """Check payment status"""
+    try:
+        payment = Payment.query.filter_by(reference=reference).first()
+        
+        if not payment:
+            return jsonify({
+                'status': 'error',
+                'message': 'Payment not found'
+            }), 404
+            
+        if payment.user_id != current_user.id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized'
+            }), 403
+            
+        return jsonify({
+            'status': payment.status,
+            'message': payment.failure_reason if payment.status == 'failed' else None
+        })
         
     except Exception as e:
-        logger.error(f"Error processing STK Push: {str(e)}")
+        logger.error(f"Error checking payment status: {str(e)}")
         return jsonify({
             'status': 'error',
-            'message': 'Internal server error'
+            'message': 'An error occurred'
         }), 500
 
 @mpesa.route('/callback', methods=['POST'])

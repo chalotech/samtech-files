@@ -6,41 +6,18 @@ import secrets
 class DownloadToken(db.Model):
     __tablename__ = 'download_tokens'
     id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(100), unique=True, nullable=False)
+    token = db.Column(db.String(36), unique=True, nullable=False)
+    download_count = db.Column(db.Integer, default=0)
     firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
-    is_used = db.Column(db.Boolean, default=False)
-    used_at = db.Column(db.DateTime, nullable=True)
-
-    @staticmethod
-    def generate_token(firmware_id, user_id, payment_id=None, expires_in=timedelta(hours=24)):
-        """Generate a new download token"""
-        token = DownloadToken(
-            token=secrets.token_urlsafe(32),
-            firmware_id=firmware_id,
-            user_id=user_id,
-            payment_id=payment_id,
-            expires_at=datetime.utcnow() + expires_in
-        )
-        db.session.add(token)
-        db.session.commit()
-        return token
-
-    def is_valid(self):
-        """Check if token is valid"""
-        return not self.is_used and datetime.utcnow() <= self.expires_at
-
-    def use_token(self):
-        """Mark token as used"""
-        if self.is_valid():
-            self.is_used = True
-            self.used_at = datetime.utcnow()
-            db.session.commit()
-            return True
-        return False
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __init__(self, token, firmware_id, user_id, expires_at):
+        self.token = token
+        self.firmware_id = firmware_id
+        self.user_id = user_id
+        self.expires_at = expires_at
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -111,36 +88,45 @@ class Brand(db.Model):
 class Firmware(db.Model):
     __tablename__ = 'firmwares'
     id = db.Column(db.Integer, primary_key=True)
-    model = db.Column(db.String(100), nullable=False)
-    version = db.Column(db.String(50), nullable=False)
-    description = db.Column(db.Text)
-    gmail_link = db.Column(db.String(500), nullable=False)
-    icon_path = db.Column(db.String(255))
-    price = db.Column(db.Numeric(10, 2), default=0.0, nullable=False)
-    brand_id = db.Column(db.Integer, db.ForeignKey('brands.id', ondelete='CASCADE'), nullable=False)
-    downloads = db.Column(db.Integer, default=0, nullable=False)
-    added_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    version = db.Column(db.String(20), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    features = db.Column(db.Text, nullable=True)
+    filename = db.Column(db.String(255), nullable=False)
+    image = db.Column(db.String(255), nullable=True)
+    size = db.Column(db.Integer, nullable=False)  # Size in bytes
+    price = db.Column(db.Float, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    brand_id = db.Column(db.Integer, db.ForeignKey('brands.id'), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    payments = db.relationship('Payment', 
-                             backref='firmware', 
-                             lazy=True, 
-                             cascade='all, delete-orphan')
-    download_tokens = db.relationship('DownloadToken',
-                                    backref='firmware',
-                                    lazy=True,
-                                    cascade='all, delete-orphan')
+    brand = db.relationship('Brand', backref='firmwares')
+    payments = db.relationship('Payment', backref='firmware', lazy=True)
+    downloads = db.relationship('DownloadToken', backref='firmware', lazy=True)
 
 class Payment(db.Model):
     __tablename__ = 'payments'
     id = db.Column(db.Integer, primary_key=True)
-    reference = db.Column(db.String(100), unique=True, nullable=False)
-    amount = db.Column(db.Numeric(10, 2), nullable=False)
-    phone_number = db.Column(db.String(20), nullable=False)
-    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id', ondelete='CASCADE'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
-    status = db.Column(db.String(20), default='pending', nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    completed_at = db.Column(db.DateTime)
-    withdrawn = db.Column(db.Boolean, default=False, nullable=False)
+    reference = db.Column(db.String(50), unique=True, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    amount_paid = db.Column(db.Float, nullable=True)
+    status = db.Column(db.String(20), default='pending')
+    phone_number = db.Column(db.String(15), nullable=False)
+    checkout_request_id = db.Column(db.String(50), unique=True, nullable=True)
+    mpesa_receipt = db.Column(db.String(20), unique=True, nullable=True)
+    mpesa_date = db.Column(db.String(14), nullable=True)
+    failure_reason = db.Column(db.String(200), nullable=True)
+    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    
+    def __init__(self, reference, amount, phone_number, firmware_id, user_id):
+        self.reference = reference
+        self.amount = amount
+        self.phone_number = phone_number
+        self.firmware_id = firmware_id
+        self.user_id = user_id
