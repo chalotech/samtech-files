@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from . import db
-from .models import Firmware, Brand, Payment, DownloadToken, User, Withdrawal
+from .models import Firmware, Brand, Payment, DownloadToken, User
 from datetime import datetime
 import os
 from sqlalchemy import func
@@ -353,7 +353,7 @@ def withdrawals():
     
     # Get all payments and withdrawals for history
     payments = Payment.query.order_by(Payment.created_at.desc()).limit(50).all()
-    withdrawals = Withdrawal.query.order_by(Withdrawal.created_at.desc()).limit(50).all()
+    withdrawals = []
     
     return render_template('admin/withdrawals.html',
                          available_balance=available_balance,
