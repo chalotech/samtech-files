@@ -1,28 +1,39 @@
 import os
+import multiprocessing
 
-# Number of worker processes
-workers = 4
+# Server socket
+bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
+backlog = 2048
+
+# Worker processes
+workers = int(os.environ.get('WEB_CONCURRENCY', multiprocessing.cpu_count() * 2 + 1))
 worker_class = 'sync'
-
-# Binding
-bind = "0.0.0.0:" + os.environ.get("PORT", "10000")
-
-# Timeouts
+worker_connections = 1000
 timeout = 120
 keepalive = 120
-
-# Logging
-accesslog = '-'
-errorlog = '-'
-loglevel = 'info'
-
-# Prevent worker timeout issues
-worker_timeout = 120
-graceful_timeout = 120
-
-# Restart workers after this many requests
 max_requests = 1000
 max_requests_jitter = 50
 
-# Increase header timeout
-limit_request_field_size = 8190
+# Logging
+errorlog = '-'
+loglevel = 'info'
+accesslog = '-'
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
+
+# Process naming
+proc_name = 'samtech'
+
+# Server mechanics
+daemon = False
+pidfile = None
+umask = 0
+user = None
+group = None
+tmp_upload_dir = None
+
+# SSL
+keyfile = None
+certfile = None
+
+# Hook application into the server
+wsgi_app = 'run:app'

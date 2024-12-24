@@ -1,23 +1,38 @@
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class Config:
+    # Print environment variables for debugging (excluding sensitive ones)
+    def __init__(self):
+        print("Loading configuration...", file=sys.stderr)
+        print(f"DATABASE_URL exists: {bool(os.getenv('DATABASE_URL'))}", file=sys.stderr)
+        print(f"FLASK_ENV: {os.getenv('FLASK_ENV')}", file=sys.stderr)
+    
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     
     # Database configuration
     DATABASE_URL = os.getenv('DATABASE_URL')
+    
+    # Explicitly handle database URL
     if DATABASE_URL:
-        # Handle Render's postgres:// URLs
+        print(f"Original DATABASE_URL: {DATABASE_URL[:10]}...", file=sys.stderr)
         if DATABASE_URL.startswith('postgres://'):
             DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+            print("Converted postgres:// to postgresql://", file=sys.stderr)
         SQLALCHEMY_DATABASE_URI = DATABASE_URL
+        print(f"Final SQLALCHEMY_DATABASE_URI: {SQLALCHEMY_DATABASE_URI[:10]}...", file=sys.stderr)
     else:
-        # Fallback to SQLite for local development
+        print("No DATABASE_URL found, using SQLite", file=sys.stderr)
         SQLALCHEMY_DATABASE_URI = 'sqlite:///samtech.db'
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
     
     # Email configuration
     MAIL_SERVER = os.getenv('MAIL_SERVER')
@@ -29,3 +44,4 @@ class Config:
     
     # Flask configuration
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    PROPAGATE_EXCEPTIONS = True
