@@ -5,7 +5,12 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ brand.name }} Firmware</h2>
+        <div>
+            <h2>{{ brand.name }} Firmware</h2>
+            {% if brand.description %}
+            <p class="text-muted">{{ brand.description }}</p>
+            {% endif %}
+        </div>
         {% if current_user.is_authenticated and current_user.is_admin %}
         <a href="{{ url_for('main.add_firmware') }}" class="btn btn-primary">Add Firmware</a>
         {% endif %}
@@ -16,23 +21,23 @@
         {% for firmware in firmwares %}
         <div class="col">
             <div class="card h-100">
-                {% if firmware.icon_path %}
-                <img src="{{ url_for('static', filename=firmware.icon_path) }}" 
-                     class="card-img-top" alt="{{ firmware.model }} icon"
+                {% if firmware.image %}
+                <img src="{{ url_for('static', filename=firmware.image) }}" 
+                     class="card-img-top" alt="{{ firmware.name }}"
                      style="height: 200px; object-fit: contain; padding: 1rem;">
                 {% else %}
-                <div class="text-center p-4 bg-light">
-                    <i class="fas fa-microchip fa-4x text-muted"></i>
-                </div>
+                <img src="{{ url_for('static', filename='images/firmware/firmware-placeholder.svg') }}"
+                     class="card-img-top" alt="{{ firmware.name }}"
+                     style="height: 200px; object-fit: contain; padding: 1rem;">
                 {% endif %}
                 
                 <div class="card-body">
-                    <h5 class="card-title">{{ firmware.model }}</h5>
+                    <h5 class="card-title">{{ firmware.name }}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">Version {{ firmware.version }}</h6>
                     <p class="card-text">{{ firmware.description }}</p>
                     <p class="card-text">
                         <small class="text-muted">
-                            Downloads: {{ firmware.downloads }}
+                            Size: {{ (firmware.size / 1024 / 1024) | round(2) }} MB
                         </small>
                     </p>
                     <p class="card-text">
@@ -58,7 +63,7 @@
     </div>
     {% else %}
     <div class="alert alert-info">
-        No firmware available for this brand yet.
+        No firmware available for {{ brand.name }} yet.
     </div>
     {% endif %}
 </div>

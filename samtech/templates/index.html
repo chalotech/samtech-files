@@ -12,9 +12,14 @@
     {% for brand in brands %}
     <div class="col">
         <div class="card h-100 brand-card">
-            <img src="{{ url_for('static', filename=brand.icon_path) }}" class="card-img-top p-3" alt="{{ brand.name }}">
+            {% if brand.logo %}
+            <img src="{{ url_for('static', filename=brand.logo) }}" class="card-img-top p-3" alt="{{ brand.name }}">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/brands/brand-placeholder.svg') }}" class="card-img-top p-3" alt="{{ brand.name }}">
+            {% endif %}
             <div class="card-body text-center">
                 <h5 class="card-title">{{ brand.name }}</h5>
+                <p class="card-text text-muted small">{{ brand.description }}</p>
                 <a href="{{ url_for('main.brand', brand_id=brand.id) }}" class="btn btn-primary">View Firmware</a>
             </div>
         </div>
