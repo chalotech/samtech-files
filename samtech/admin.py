@@ -23,7 +23,7 @@ def save_logo(file):
     unique_filename = f"{uuid.uuid4()}_{filename}"
     
     # Create brands directory if it doesn't exist
-    logos_dir = os.path.join(current_app.static_folder, 'brands')
+    logos_dir = os.path.join(current_app.static_folder, 'images', 'brands')
     os.makedirs(logos_dir, exist_ok=True)
     
     filepath = os.path.join(logos_dir, unique_filename)
@@ -39,12 +39,12 @@ def save_logo(file):
             image.thumbnail((800, 800))
         # Save with optimization
         image.save(filepath, optimize=True, quality=85)
-        return os.path.join('brands', unique_filename)
+        return os.path.join('images', 'brands', unique_filename)
     except Exception as e:
         current_app.logger.error(f"Error saving logo: {str(e)}")
         return None
 
-@admin.route('/admin/brands')
+@admin.route('/brands')
 @login_required
 def manage_brands():
     if not current_user.is_admin:
@@ -54,7 +54,7 @@ def manage_brands():
     brands = Brand.query.order_by(Brand.name).all()
     return render_template('admin/brands.html', brands=brands)
 
-@admin.route('/admin/brands/add', methods=['POST'])
+@admin.route('/brands/add', methods=['POST'])
 @login_required
 def add_brand():
     if not current_user.is_admin:
@@ -78,7 +78,7 @@ def add_brand():
     logo_path = save_logo(logo) if logo else None
     
     try:
-        brand = Brand(name=name, description=description, logo_path=logo_path)
+        brand = Brand(name=name, description=description, logo=logo_path)
         db.session.add(brand)
         db.session.commit()
         flash('Brand added successfully!', 'success')
@@ -89,7 +89,7 @@ def add_brand():
     
     return redirect(url_for('admin.manage_brands'))
 
-@admin.route('/admin/brands/<int:id>/edit', methods=['POST'])
+@admin.route('/brands/<int:id>/edit', methods=['POST'])
 @login_required
 def edit_brand(id):
     if not current_user.is_admin:
@@ -117,11 +117,11 @@ def edit_brand(id):
             new_logo_path = save_logo(logo)
             if new_logo_path:
                 # Delete old logo if it exists
-                if brand.logo_path:
-                    old_logo_path = os.path.join(current_app.static_folder, brand.logo_path)
+                if brand.logo:
+                    old_logo_path = os.path.join(current_app.static_folder, brand.logo)
                     if os.path.exists(old_logo_path):
                         os.remove(old_logo_path)
-                brand.logo_path = new_logo_path
+                brand.logo = new_logo_path
         
         brand.name = name
         brand.description = description
@@ -134,7 +134,7 @@ def edit_brand(id):
     
     return redirect(url_for('admin.manage_brands'))
 
-@admin.route('/admin/brands/<int:id>/delete', methods=['POST'])
+@admin.route('/brands/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_brand(id):
     if not current_user.is_admin:
@@ -145,8 +145,8 @@ def delete_brand(id):
     
     try:
         # Delete logo file if it exists
-        if brand.logo_path:
-            logo_path = os.path.join(current_app.static_folder, brand.logo_path)
+        if brand.logo:
+            logo_path = os.path.join(current_app.static_folder, brand.logo)
             if os.path.exists(logo_path):
                 os.remove(logo_path)
         
