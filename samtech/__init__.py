@@ -27,6 +27,14 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
     
+    # Initialize database tables
+    with app.app_context():
+        try:
+            db.create_all()
+            app.logger.info("Database tables created successfully")
+        except Exception as e:
+            app.logger.error(f"Error creating database tables: {str(e)}")
+    
     from .auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint)
     
