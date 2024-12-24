@@ -47,16 +47,6 @@ class User(UserMixin, db.Model):
         self.is_admin = is_admin
         self.is_verified = is_verified
 
-class BrandCategory(db.Model):
-    __tablename__ = 'brand_categories'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    brands = db.relationship('Brand', backref='category', lazy=True)
-
 class Brand(db.Model):
     __tablename__ = 'brands'
     id = db.Column(db.Integer, primary_key=True)
@@ -97,7 +87,7 @@ class Payment(db.Model):
     reference = db.Column(db.String(50), unique=True, nullable=False)
     amount = db.Column(db.Float, nullable=False)
     amount_paid = db.Column(db.Float, nullable=True)
-    status = db.Column(db.String(20), default='pending')
+    status = db.Column(db.String(20), default='pending')  # pending, completed, failed
     phone_number = db.Column(db.String(15), nullable=False)
     checkout_request_id = db.Column(db.String(50), unique=True, nullable=True)
     mpesa_receipt = db.Column(db.String(20), unique=True, nullable=True)
