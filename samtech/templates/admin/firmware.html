@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Firmware{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Manage Firmware</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFirmwareModal">
+            <i class="fas fa-plus"></i> Add Firmware
+        </button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+        {% for firmware in firmwares %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-img-top text-center p-3" style="height: 200px;">
+                    {% if firmware.image %}
+                        <img src="{{ url_for('static', filename=firmware.image) }}" 
+                             alt="{{ firmware.name }}" 
+                             class="img-fluid h-100" 
+                             style="object-fit: contain;">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='images/firmware-placeholder.svg') }}"
+                             alt="{{ firmware.name }}"
+                             class="img-fluid h-100"
+                             style="object-fit: contain;">
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ firmware.name }}</h5>
+                    <p class="card-text text-muted">Version {{ firmware.version }}</p>
+                    <p class="card-text">{{ firmware.description }}</p>
+                    <p class="card-text">
+                        <small class="text-muted">Brand: {{ firmware.brand.name }}</small><br>
+                        <small class="text-muted">Price: KES {{ "%.2f"|format(firmware.price) }}</small>
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Added {{ firmware.created_at.strftime('%Y-%m-%d') }}</small>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    onclick="editFirmware({{ firmware.id }})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="deleteFirmware({{ firmware.id }}, '{{ firmware.name }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Firmware Modal -->
+<div class="modal fade" id="addFirmwareModal" tabindex="-1" aria-labelledby="addFirmwareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.add_firmware') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addFirmwareModalLabel">Add New Firmware</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="version" class="form-label">Version</label>
+                                <input type="text" class="form-control" id="version" name="version" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="brand_id" class="form-label">Brand</label>
+                                <select class="form-select" id="brand_id" name="brand_id" required>
+                                    <option value="">Select Brand</option>
+                                    {% for brand in brands %}
+                                    <option value="{{ brand.id }}">{{ brand.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price (KES)</label>
+                                <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="features" class="form-label">Features</label>
+                                <textarea class="form-control" id="features" name="features" rows="3"></textarea>
+                                <div class="form-text">List key features, one per line</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="firmware_file" class="form-label">Firmware File</label>
+                                <input type="file" class="form-control" id="firmware_file" name="firmware_file" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="image" class="form-label">Preview Image</label>
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Firmware</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Firmware Modal -->
+<div class="modal fade" id="editFirmwareModal" tabindex="-1" aria-labelledby="editFirmwareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="editFirmwareForm" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editFirmwareModalLabel">Edit Firmware</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="edit_name" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_version" class="form-label">Version</label>
+                                <input type="text" class="form-control" id="edit_version" name="version" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_brand_id" class="form-label">Brand</label>
+                                <select class="form-select" id="edit_brand_id" name="brand_id" required>
+                                    <option value="">Select Brand</option>
+                                    {% for brand in brands %}
+                                    <option value="{{ brand.id }}">{{ brand.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_price" class="form-label">Price (KES)</label>
+                                <input type="number" class="form-control" id="edit_price" name="price" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_description" class="form-label">Description</label>
+                                <textarea class="form-control" id="edit_description" name="description" rows="3" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_features" class="form-label">Features</label>
+                                <textarea class="form-control" id="edit_features" name="features" rows="3"></textarea>
+                                <div class="form-text">List key features, one per line</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_firmware_file" class="form-label">Firmware File</label>
+                                <input type="file" class="form-control" id="edit_firmware_file" name="firmware_file">
+                                <div class="form-text">Leave empty to keep current file</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_image" class="form-label">Preview Image</label>
+                                <input type="file" class="form-control" id="edit_image" name="image" accept="image/*">
+                                <div class="form-text">Leave empty to keep current image</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Firmware Modal -->
+<div class="modal fade" id="deleteFirmwareModal" tabindex="-1" aria-labelledby="deleteFirmwareModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="deleteFirmwareForm" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteFirmwareModalLabel">Delete Firmware</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong id="deleteFirmwareName"></strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Firmware</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function editFirmware(id) {
+    // Fetch firmware data
+    fetch(`{{ url_for('admin.get_firmware', id=0) }}`.replace('0', id))
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const firmware = data.firmware;
+                document.getElementById('edit_name').value = firmware.name;
+                document.getElementById('edit_version').value = firmware.version;
+                document.getElementById('edit_brand_id').value = firmware.brand_id;
+                document.getElementById('edit_price').value = firmware.price;
+                document.getElementById('edit_description').value = firmware.description;
+                document.getElementById('edit_features').value = firmware.features || '';
+                
+                document.getElementById('editFirmwareForm').action = 
+                    `{{ url_for('admin.manage_firmware') }}/${id}/edit`;
+                
+                var editModal = new bootstrap.Modal(document.getElementById('editFirmwareModal'));
+                editModal.show();
+            } else {
+                showAlert('error', 'Error loading firmware data');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Error loading firmware data');
+        });
+}
+
+function deleteFirmware(id, name) {
+    document.getElementById('deleteFirmwareName').textContent = name;
+    document.getElementById('deleteFirmwareForm').action = 
+        `{{ url_for('admin.manage_firmware') }}/${id}/delete`;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteFirmwareModal'));
+    deleteModal.show();
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -364,3 +364,213 @@ def export_users():
             as_attachment=True,
             download_name=f'users_{datetime.utcnow().strftime("%Y%m%d")}.xlsx'
         )
+
+@admin.route('/firmware')
+@login_required
+def manage_firmware():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    firmwares = Firmware.query.order_by(Firmware.name).all()
+    brands = Brand.query.order_by(Brand.name).all()
+    return render_template('admin/firmware.html', firmwares=firmwares, brands=brands)
+
+@admin.route('/firmware/add', methods=['POST'])
+@login_required
+def add_firmware():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    try:
+        # Get form data
+        name = request.form.get('name')
+        version = request.form.get('version')
+        description = request.form.get('description')
+        features = request.form.get('features')
+        brand_id = request.form.get('brand_id')
+        price = request.form.get('price')
+        
+        # Validate required fields
+        if not all([name, version, description, brand_id, price]):
+            flash('All required fields must be filled.', 'error')
+            return redirect(url_for('admin.manage_firmware'))
+        
+        # Handle file uploads
+        firmware_file = request.files.get('firmware_file')
+        image = request.files.get('image')
+        
+        if not firmware_file:
+            flash('Firmware file is required.', 'error')
+            return redirect(url_for('admin.manage_firmware'))
+        
+        # Save firmware file
+        firmware_filename = secure_filename(firmware_file.filename)
+        unique_firmware_filename = f"{uuid.uuid4()}_{firmware_filename}"
+        firmware_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_firmware_filename)
+        firmware_file.save(firmware_path)
+        
+        # Save image if provided
+        image_path = None
+        if image:
+            image_filename = secure_filename(image.filename)
+            unique_image_filename = f"{uuid.uuid4()}_{image_filename}"
+            images_dir = os.path.join(current_app.static_folder, 'images', 'firmware')
+            os.makedirs(images_dir, exist_ok=True)
+            image_path = os.path.join(images_dir, unique_image_filename)
+            
+            # Optimize image
+            img = Image.open(image)
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            if max(img.size) > 800:
+                img.thumbnail((800, 800))
+            img.save(image_path, optimize=True, quality=85)
+            image_path = os.path.join('images', 'firmware', unique_image_filename)
+        
+        # Create firmware record
+        firmware = Firmware(
+            name=name,
+            version=version,
+            description=description,
+            features=features,
+            filename=unique_firmware_filename,
+            image=image_path,
+            size=os.path.getsize(firmware_path),
+            price=float(price),
+            brand_id=int(brand_id),
+            creator_id=current_user.id
+        )
+        
+        db.session.add(firmware)
+        db.session.commit()
+        flash('Firmware added successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error adding firmware: {str(e)}")
+        flash('An error occurred while adding the firmware.', 'error')
+    
+    return redirect(url_for('admin.manage_firmware'))
+
+@admin.route('/firmware/<int:id>/edit', methods=['POST'])
+@login_required
+def edit_firmware(id):
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    firmware = Firmware.query.get_or_404(id)
+    
+    try:
+        # Update basic info
+        firmware.name = request.form.get('name')
+        firmware.version = request.form.get('version')
+        firmware.description = request.form.get('description')
+        firmware.features = request.form.get('features')
+        firmware.brand_id = int(request.form.get('brand_id'))
+        firmware.price = float(request.form.get('price'))
+        
+        # Handle firmware file update
+        firmware_file = request.files.get('firmware_file')
+        if firmware_file:
+            # Delete old file
+            old_firmware_path = os.path.join(current_app.config['UPLOAD_FOLDER'], firmware.filename)
+            if os.path.exists(old_firmware_path):
+                os.remove(old_firmware_path)
+            
+            # Save new file
+            firmware_filename = secure_filename(firmware_file.filename)
+            unique_firmware_filename = f"{uuid.uuid4()}_{firmware_filename}"
+            firmware_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_firmware_filename)
+            firmware_file.save(firmware_path)
+            
+            firmware.filename = unique_firmware_filename
+            firmware.size = os.path.getsize(firmware_path)
+        
+        # Handle image update
+        image = request.files.get('image')
+        if image:
+            # Delete old image
+            if firmware.image:
+                old_image_path = os.path.join(current_app.static_folder, firmware.image)
+                if os.path.exists(old_image_path):
+                    os.remove(old_image_path)
+            
+            # Save new image
+            image_filename = secure_filename(image.filename)
+            unique_image_filename = f"{uuid.uuid4()}_{image_filename}"
+            images_dir = os.path.join(current_app.static_folder, 'images', 'firmware')
+            os.makedirs(images_dir, exist_ok=True)
+            image_path = os.path.join(images_dir, unique_image_filename)
+            
+            # Optimize image
+            img = Image.open(image)
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            if max(img.size) > 800:
+                img.thumbnail((800, 800))
+            img.save(image_path, optimize=True, quality=85)
+            firmware.image = os.path.join('images', 'firmware', unique_image_filename)
+        
+        db.session.commit()
+        flash('Firmware updated successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating firmware: {str(e)}")
+        flash('An error occurred while updating the firmware.', 'error')
+    
+    return redirect(url_for('admin.manage_firmware'))
+
+@admin.route('/firmware/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_firmware(id):
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    firmware = Firmware.query.get_or_404(id)
+    
+    try:
+        # Delete firmware file
+        firmware_path = os.path.join(current_app.config['UPLOAD_FOLDER'], firmware.filename)
+        if os.path.exists(firmware_path):
+            os.remove(firmware_path)
+        
+        # Delete image if exists
+        if firmware.image:
+            image_path = os.path.join(current_app.static_folder, firmware.image)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        
+        db.session.delete(firmware)
+        db.session.commit()
+        flash('Firmware deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting firmware: {str(e)}")
+        flash('An error occurred while deleting the firmware.', 'error')
+    
+    return redirect(url_for('admin.manage_firmware'))
+
+@admin.route('/firmware/<int:id>')
+@login_required
+def get_firmware(id):
+    if not current_user.is_admin:
+        return jsonify({'status': 'error', 'message': 'Access denied'})
+    
+    firmware = Firmware.query.get_or_404(id)
+    return jsonify({
+        'status': 'success',
+        'firmware': {
+            'name': firmware.name,
+            'version': firmware.version,
+            'description': firmware.description,
+            'features': firmware.features,
+            'brand_id': firmware.brand_id,
+            'price': firmware.price
+        }
+    })
