@@ -40,12 +40,14 @@ class User(UserMixin, db.Model):
     downloads = db.relationship('DownloadToken', backref='user', lazy=True)
     firmwares = db.relationship('Firmware', backref='creator', lazy=True)
     
-    def __init__(self, username, email, password, is_admin=False, is_verified=False):
+    def __init__(self, username, email, password, is_admin=False, is_verified=False, verification_code=None, verification_code_expiry=None):
         self.username = username
         self.email = email
         self.password = password
         self.is_admin = is_admin
         self.is_verified = is_verified
+        self.verification_code = verification_code
+        self.verification_code_expiry = verification_code_expiry
 
 class Brand(db.Model):
     __tablename__ = 'brands'
