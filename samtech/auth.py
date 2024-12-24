@@ -6,6 +6,7 @@ from .models import User
 from flask_mail import Message
 import random
 import string
+from datetime import datetime
 
 auth = Blueprint('auth', __name__)
 
@@ -13,11 +14,40 @@ def generate_verification_code():
     return ''.join(random.choices(string.digits, k=6))
 
 def send_verification_email(email, code):
-    msg = Message('Email Verification',
-                  sender='noreply@samtech.com',
+    msg = Message('Verify your Samtech Firmware Account',
+                  sender=('Samtech Firmware', 'chalomtech4@gmail.com'),
                   recipients=[email])
-    msg.body = f'Your verification code is: {code}'
-    mail.send(msg)
+    
+    msg.html = render_template('email/verify_email.html',
+                             verify_url=url_for('auth.verify_email', code=code, _external=True),
+                             user={'username': email.split('@')[0]},
+                             now=datetime.utcnow())
+    
+    try:
+        mail.send(msg)
+        current_app.logger.info(f"Verification email sent to {email}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification email: {str(e)}")
+        raise
+
+def send_password_reset_email(user):
+    token = generate_token(user.email)
+    reset_url = url_for('auth.reset_password', token=token, _external=True)
+    
+    msg = Message('Reset Your Password',
+                  sender=('Samtech Firmware', 'chalomtech4@gmail.com'),
+                  recipients=[user.email])
+    
+    msg.html = render_template('email/reset_password.html',
+                             reset_url=reset_url,
+                             user=user)
+    
+    try:
+        mail.send(msg)
+        current_app.logger.info(f"Password reset email sent to {user.email}")
+    except Exception as e:
+        current_app.logger.error(f"Failed to send password reset email: {str(e)}")
+        raise
 
 @auth.route('/login')
 def login():
