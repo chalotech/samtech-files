@@ -12,9 +12,10 @@ def init_db(app):
         logger.info("Creating admin user...")
         
         # Check if admin exists
-        admin = User.query.filter_by(email='samtech@gmail.com').first()
+        admin = User.query.filter_by(username='samtech').first()
         if not admin:
             admin = User(
+                username='samtech',
                 email='samtech@gmail.com',
                 password=generate_password_hash('samuel', method='sha256'),
                 is_admin=True,

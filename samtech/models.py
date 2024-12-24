@@ -45,18 +45,28 @@ class DownloadToken(db.Model):
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100))
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_verified = db.Column(db.Boolean, default=False)
-    verification_code = db.Column(db.String(6), unique=True, nullable=True)
+    verification_code = db.Column(db.String(32), unique=True, nullable=True)
     verification_code_expiry = db.Column(db.DateTime, nullable=True)
+    last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    firmwares = db.relationship('Firmware', backref='creator', lazy=True)
     payments = db.relationship('Payment', backref='user', lazy=True)
     downloads = db.relationship('DownloadToken', backref='user', lazy=True)
+    firmwares = db.relationship('Firmware', backref='creator', lazy=True)
+    
+    def __init__(self, username, email, password, is_admin=False, is_verified=False):
+        self.username = username
+        self.email = email
+        self.password = password
+        self.is_admin = is_admin
+        self.is_verified = is_verified
 
 class BrandCategory(db.Model):
     __tablename__ = 'brand_categories'

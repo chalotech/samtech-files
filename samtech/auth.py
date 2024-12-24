@@ -34,66 +34,70 @@ def send_verification_email(email, code):
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email')
+        username = request.form.get('username')
         password = request.form.get('password')
-        remember = True if request.form.get('remember') else False
         
-        user = User.query.filter_by(email=email).first()
+        user = User.query.filter_by(username=username).first()
         
-        if not user:
-            flash('Please check your login details and try again.', 'error')
-            return redirect(url_for('auth.login'))
-        
-        if not check_password_hash(user.password, password):
-            flash('Please check your login details and try again.', 'error')
-            return redirect(url_for('auth.login'))
-        
-        if not user.is_verified:
-            flash('Please verify your email address first.', 'warning')
-            return redirect(url_for('auth.verify_email'))
-        
-        login_user(user, remember=remember)
-        return redirect(url_for('main.index'))
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('main.index'))
+        else:
+            flash('Invalid username or password.', 'error')
     
-    return render_template('login.html')
+    return render_template('auth/login.html')
 
-@auth.route('/signup', methods=['GET', 'POST'])
-def signup():
+@auth.route('/register', methods=['GET', 'POST'])
+def register():
     if request.method == 'POST':
+        username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
         
-        user = User.query.filter_by(email=email).first()
+        if not username or not email or not password:
+            flash('Please fill in all fields.', 'error')
+            return redirect(url_for('auth.register'))
         
-        if user:
-            flash('Email address already exists', 'error')
-            return redirect(url_for('auth.signup'))
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('auth.register'))
         
-        verification_code = generate_verification_code()
-        verification_code_expiry = datetime.utcnow() + timedelta(hours=24)
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists.', 'error')
+            return redirect(url_for('auth.register'))
         
-        new_user = User(
-            email=email,
-            password=generate_password_hash(password, method='sha256'),
-            verification_code=verification_code,
-            verification_code_expiry=verification_code_expiry
-        )
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered.', 'error')
+            return redirect(url_for('auth.register'))
+        
+        hashed_password = generate_password_hash(password, method='sha256')
+        new_user = User(username=username, email=email, password=hashed_password)
         
         try:
             db.session.add(new_user)
             db.session.commit()
             
-            send_verification_email(email, verification_code)
+            # Send verification email
+            verification_code = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+            new_user.verification_code = verification_code
+            new_user.verification_code_expiry = datetime.utcnow() + timedelta(hours=24)
+            db.session.commit()
             
-            flash('Registration successful! Please check your email for verification code.', 'success')
-            return redirect(url_for('auth.verify_email'))
+            send_verification_email(new_user.email, verification_code)
+            
+            flash('Registration successful! Please check your email to verify your account.', 'success')
+            return redirect(url_for('auth.login'))
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error during signup: {str(e)}")
-            flash('An error occurred during registration. Please try again.', 'error')
-            return redirect(url_for('auth.signup'))
+            flash('An error occurred during registration.', 'error')
+            return redirect(url_for('auth.register'))
     
-    return render_template('signup.html')
+    return render_template('auth/register.html')
 
 @auth.route('/verify-email', methods=['GET', 'POST'])
 def verify_email():
