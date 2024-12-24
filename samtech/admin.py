@@ -113,7 +113,7 @@ def edit_brand(id):
             return redirect(url_for('admin.manage_brands'))
         
         # Update logo if new one provided
-        if logo:
+        if logo and logo.filename:
             new_logo_path = save_logo(logo)
             if new_logo_path:
                 # Delete old logo if it exists

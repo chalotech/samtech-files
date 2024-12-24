@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Pay with M-Pesa{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Pay with M-Pesa</h4>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> You will receive a prompt on your phone to complete the payment.
+                    </div>
+
+                    <form id="paymentForm">
+                        <input type="hidden" id="firmware_id" value="{{ firmware.id }}">
+                        <input type="hidden" id="amount" value="{{ firmware.price }}">
+
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label">Phone Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text">+254</span>
+                                <input type="tel" class="form-control" id="phone_number" 
+                                       placeholder="7XXXXXXXX" pattern="[0-9]{9}" maxlength="9" required>
+                            </div>
+                            <div class="form-text">Enter your Safaricom number without the country code</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <p class="form-control-static">KES {{ "%.2f"|format(firmware.price) }}</p>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="payButton">
+                                <i class="fas fa-mobile-alt me-2"></i> Pay with M-Pesa
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="paymentStatus" class="mt-3" style="display: none;">
+                        <div class="alert alert-warning">
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span>Processing payment... Please check your phone.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const phone = document.getElementById('phone_number').value;
+    const firmware_id = document.getElementById('firmware_id').value;
+    const amount = document.getElementById('amount').value;
+    const payButton = document.getElementById('payButton');
+    const paymentStatus = document.getElementById('paymentStatus');
+    
+    // Disable button and show loading state
+    payButton.disabled = true;
+    paymentStatus.style.display = 'block';
+    
+    // Format phone number
+    let formattedPhone = phone;
+    if (phone.startsWith('0')) {
+        formattedPhone = '254' + phone.substring(1);
+    } else if (!phone.startsWith('254')) {
+        formattedPhone = '254' + phone;
+    }
+    
+    // Make payment request
+    fetch('{{ url_for("mpesa.stk_push") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            phone_number: formattedPhone,
+            amount: parseFloat(amount),
+            firmware_id: parseInt(firmware_id)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Start checking payment status
+            checkPaymentStatus(data.data.reference);
+        } else {
+            // Show error and reset form
+            showAlert('error', data.message);
+            payButton.disabled = false;
+            paymentStatus.style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'An error occurred. Please try again.');
+        payButton.disabled = false;
+        paymentStatus.style.display = 'none';
+    });
+});
+
+function checkPaymentStatus(reference) {
+    const checkStatus = () => {
+        fetch(`{{ url_for("mpesa.payment_status", reference="") }}${reference}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    showAlert('success', 'Payment successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 2000);
+                } else if (data.status === 'failed') {
+                    showAlert('error', 'Payment failed. Please try again.');
+                    resetForm();
+                } else {
+                    // Continue checking if pending
+                    setTimeout(checkStatus, 5000);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Error checking payment status');
+                resetForm();
+            });
+    };
+    
+    // Start checking status
+    setTimeout(checkStatus, 5000);
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const form = document.getElementById('paymentForm');
+    form.insertAdjacentElement('beforebegin', alertDiv);
+}
+
+function resetForm() {
+    const payButton = document.getElementById('payButton');
+    const paymentStatus = document.getElementById('paymentStatus');
+    payButton.disabled = false;
+    paymentStatus.style.display = 'none';
+}
+</script>
+{% endblock %}
