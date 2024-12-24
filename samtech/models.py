@@ -65,36 +65,24 @@ class Firmware(db.Model):
     __tablename__ = 'firmwares'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    version = db.Column(db.String(20), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    features = db.Column(db.Text, nullable=True)
+    version = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text)
+    features = db.Column(db.Text)
     filename = db.Column(db.String(255), nullable=False)
-    image = db.Column(db.String(255), nullable=True)
-    size = db.Column(db.Integer, nullable=False)  # Size in bytes
-    price = db.Column(db.Float, nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
-    brand_id = db.Column(db.Integer, db.ForeignKey('brands.id'), nullable=False)
-    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    image = db.Column(db.String(255))
+    size = db.Column(db.Integer)
+    price = db.Column(db.Float, default=0.0)
+    downloads = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    brand_id = db.Column(db.Integer, db.ForeignKey('brands.id'), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    # Relationships
-    brand = db.relationship('Brand', back_populates='firmwares')
-    payments = db.relationship('Payment', backref='firmware', lazy=True)
-    downloads = db.relationship('DownloadToken', backref='firmware', lazy=True)
-
-    def __init__(self, name, version, description, filename, size, price, brand_id, creator_id, features=None, image=None):
-        self.name = name
-        self.version = version
-        self.description = description
-        self.features = features
-        self.filename = filename
-        self.image = image
-        self.size = size
-        self.price = price
-        self.brand_id = brand_id
-        self.creator_id = creator_id
-        self.is_active = True
+    brand = db.relationship('Brand', backref=db.backref('firmwares', lazy=True))
+    creator = db.relationship('User', backref=db.backref('firmwares', lazy=True))
+    
+    def __repr__(self):
+        return f'<Firmware {self.name} v{self.version}>'
 
 class Payment(db.Model):
     __tablename__ = 'payments'

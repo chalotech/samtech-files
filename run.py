@@ -1,7 +1,8 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from samtech import create_app
+from samtech import create_app, db
+from flask import request, render_template
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,17 +29,23 @@ try:
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
 
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        app.logger.error(f'Page not found: {request.url}')
+        return render_template('errors/404.html'), 404
+
     @app.errorhandler(500)
     def internal_error(error):
         app.logger.error(f'Server Error: {error}')
         db.session.rollback()
-        return "Internal Server Error", 500
+        return render_template('errors/500.html'), 500
 
     @app.errorhandler(Exception)
     def unhandled_exception(e):
         app.logger.error(f'Unhandled Exception: {e}')
         db.session.rollback()
-        return "Internal Server Error", 500
+        return render_template('errors/500.html'), 500
 
 except Exception as e:
     logger.error(f"Failed to create app: {e}")
