@@ -2,7 +2,9 @@ import os
 import sys
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load environment variables from .env file if it exists
+if os.path.exists('.env'):
+    load_dotenv()
 
 class Config:
     # Print environment variables for debugging (excluding sensitive ones)
@@ -10,12 +12,15 @@ class Config:
         print("Loading configuration...", file=sys.stderr)
         print(f"DATABASE_URL exists: {bool(os.getenv('DATABASE_URL'))}", file=sys.stderr)
         print(f"FLASK_ENV: {os.getenv('FLASK_ENV')}", file=sys.stderr)
+        print(f"Raw DATABASE_URL: {os.getenv('DATABASE_URL')}", file=sys.stderr)
     
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     
     # Database configuration
-    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///samtech.db')
-    if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    if not DATABASE_URL or '${' in DATABASE_URL:  # Check for template variables
+        DATABASE_URL = 'sqlite:///samtech.db'
+    elif DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     
     # Set the database URL
