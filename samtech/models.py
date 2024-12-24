@@ -3,6 +3,45 @@ from flask_login import UserMixin
 from datetime import datetime, timedelta
 import secrets
 
+class DownloadToken(db.Model):
+    __tablename__ = 'download_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
+    used_at = db.Column(db.DateTime, nullable=True)
+
+    @staticmethod
+    def generate_token(firmware_id, user_id, payment_id=None, expires_in=timedelta(hours=24)):
+        """Generate a new download token"""
+        token = DownloadToken(
+            token=secrets.token_urlsafe(32),
+            firmware_id=firmware_id,
+            user_id=user_id,
+            payment_id=payment_id,
+            expires_at=datetime.utcnow() + expires_in
+        )
+        db.session.add(token)
+        db.session.commit()
+        return token
+
+    def is_valid(self):
+        """Check if token is valid"""
+        return not self.is_used and datetime.utcnow() <= self.expires_at
+
+    def use_token(self):
+        """Mark token as used"""
+        if self.is_valid():
+            self.is_used = True
+            self.used_at = datetime.utcnow()
+            db.session.commit()
+            return True
+        return False
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -69,44 +108,3 @@ class Payment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     completed_at = db.Column(db.DateTime)
     withdrawn = db.Column(db.Boolean, default=False, nullable=False)
-
-class DownloadToken(db.Model):
-    """Model for one-time download tokens"""
-    __tablename__ = 'download_tokens'
-    id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(64), unique=True, nullable=False)
-    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id', ondelete='CASCADE'), nullable=False)
-    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id', ondelete='CASCADE'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, default=False, nullable=False)
-    used_at = db.Column(db.DateTime)
-    
-    @staticmethod
-    def generate_token(firmware_id, payment_id, expires_in=timedelta(hours=24)):
-        """Generate a new download token"""
-        token = DownloadToken(
-            token=secrets.token_urlsafe(32),
-            firmware_id=firmware_id,
-            payment_id=payment_id,
-            expires_at=datetime.utcnow() + expires_in
-        )
-        db.session.add(token)
-        db.session.commit()
-        return token
-    
-    def is_valid(self):
-        """Check if token is valid"""
-        return (
-            not self.used and
-            datetime.utcnow() <= self.expires_at
-        )
-    
-    def use_token(self):
-        """Mark token as used"""
-        if self.is_valid():
-            self.used = True
-            self.used_at = datetime.utcnow()
-            db.session.commit()
-            return True
-        return False
