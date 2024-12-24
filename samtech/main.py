@@ -42,6 +42,43 @@ def firmware(firmware_id):
 
 @main.route('/admin')
 @login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    # Get statistics
+    total_users = User.query.count()
+    total_brands = Brand.query.count()
+    total_firmwares = Firmware.query.count()
+    total_payments = Payment.query.count()
+    
+    # Get latest items
+    latest_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+    latest_firmwares = Firmware.query.order_by(Firmware.created_at.desc()).limit(5).all()
+    latest_payments = Payment.query.order_by(Payment.created_at.desc()).limit(5).all()
+    
+    return render_template('admin/dashboard.html',
+                         total_users=total_users,
+                         total_brands=total_brands,
+                         total_firmwares=total_firmwares,
+                         total_payments=total_payments,
+                         latest_users=latest_users,
+                         latest_firmwares=latest_firmwares,
+                         latest_payments=latest_payments)
+
+@main.route('/admin/brands')
+@login_required
+def admin_brands():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    brands = Brand.query.order_by(Brand.name).all()
+    return render_template('admin/brands.html', brands=brands)
+
+@main.route('/admin')
+@login_required
 def admin():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'error')

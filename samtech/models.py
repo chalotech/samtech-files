@@ -58,19 +58,43 @@ class User(UserMixin, db.Model):
     payments = db.relationship('Payment', backref='user', lazy=True)
     downloads = db.relationship('DownloadToken', backref='user', lazy=True)
 
+class BrandCategory(db.Model):
+    __tablename__ = 'brand_categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    brands = db.relationship('Brand', backref='category', lazy=True)
+
 class Brand(db.Model):
     __tablename__ = 'brands'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
-    icon_path = db.Column(db.String(255))
-    description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    logo_path = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('brand_categories.id'), nullable=True)
+    website = db.Column(db.String(255), nullable=True)
+    contact_email = db.Column(db.String(100), nullable=True)
+    support_phone = db.Column(db.String(20), nullable=True)
+    is_featured = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(20), default='active')  # active, inactive, pending
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    firmwares = db.relationship('Firmware', 
-                              backref='brand', 
-                              lazy=True, 
-                              cascade='all, delete-orphan')
+    firmwares = db.relationship('Firmware', backref='brand', lazy=True)
+    
+    def __init__(self, name, description=None, logo_path=None, category_id=None,
+                 website=None, contact_email=None, support_phone=None):
+        self.name = name
+        self.description = description
+        self.logo_path = logo_path
+        self.category_id = category_id
+        self.website = website
+        self.contact_email = contact_email
+        self.support_phone = support_phone
 
 class Firmware(db.Model):
     __tablename__ = 'firmwares'

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>User Management</h2>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="fas fa-download"></i> Export Users
+            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="?status=all">All Users</a></li>
+                    <li><a class="dropdown-item" href="?status=verified">Verified Users</a></li>
+                    <li><a class="dropdown-item" href="?status=unverified">Unverified Users</a></li>
+                    <li><a class="dropdown-item" href="?status=admin">Admin Users</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="search" placeholder="Search users..." 
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="sort">
+                        <option value="newest" {% if request.args.get('sort') == 'newest' %}selected{% endif %}>
+                            Newest First
+                        </option>
+                        <option value="oldest" {% if request.args.get('sort') == 'oldest' %}selected{% endif %}>
+                            Oldest First
+                        </option>
+                        <option value="email" {% if request.args.get('sort') == 'email' %}selected{% endif %}>
+                            Email (A-Z)
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="status">
+                        <option value="all" {% if request.args.get('status') == 'all' %}selected{% endif %}>
+                            All Status
+                        </option>
+                        <option value="verified" {% if request.args.get('status') == 'verified' %}selected{% endif %}>
+                            Verified Only
+                        </option>
+                        <option value="unverified" {% if request.args.get('status') == 'unverified' %}selected{% endif %}>
+                            Unverified Only
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                {{ user.email }}
+                                {% if user.is_admin %}
+                                <span class="badge bg-primary ms-1">Admin</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_verified %}
+                                <span class="badge bg-success">Verified</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_admin %}
+                                Administrator
+                                {% else %}
+                                User
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="viewUser({{ user.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning"
+                                            onclick="toggleAdmin({{ user.id }}, {{ user.is_admin|tojson }})">
+                                        <i class="fas fa-user-shield"></i>
+                                    </button>
+                                    {% if not user.is_verified %}
+                                    <button type="button" class="btn btn-sm btn-outline-success"
+                                            onclick="verifyUser({{ user.id }})">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="deleteUser({{ user.id }}, '{{ user.email }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.manage_users', page=pagination.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page in pagination.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {{ 'active' if page == pagination.page else '' }}">
+                                <a class="page-link" href="{{ url_for('admin.manage_users', page=page) }}">{{ page }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.manage_users', page=pagination.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- View User Modal -->
+<div class="modal fade" id="viewUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Account Information</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Email</dt>
+                            <dd class="col-sm-8" id="userEmail"></dd>
+                            
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8" id="userStatus"></dd>
+                            
+                            <dt class="col-sm-4">Role</dt>
+                            <dd class="col-sm-8" id="userRole"></dd>
+                            
+                            <dt class="col-sm-4">Joined</dt>
+                            <dd class="col-sm-8" id="userJoined"></dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Activity</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Downloads</dt>
+                            <dd class="col-sm-8" id="userDownloads"></dd>
+                            
+                            <dt class="col-sm-4">Payments</dt>
+                            <dd class="col-sm-8" id="userPayments"></dd>
+                            
+                            <dt class="col-sm-4">Last Login</dt>
+                            <dd class="col-sm-8" id="userLastLogin"></dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Users</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('admin.export_users') }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Export Format</label>
+                        <select class="form-select" name="format">
+                            <option value="csv">CSV</option>
+                            <option value="excel">Excel</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-select" name="range">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="year">This Year</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Include Fields</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="fields" value="email" checked>
+                            <label class="form-check-label">Email</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="fields" value="status" checked>
+                            <label class="form-check-label">Status</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="fields" value="joined">
+                            <label class="form-check-label">Join Date</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="fields" value="downloads">
+                            <label class="form-check-label">Downloads</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="fields" value="payments">
+                            <label class="form-check-label">Payments</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Export</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function viewUser(userId) {
+    fetch(`/admin/users/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('userEmail').textContent = data.email;
+            document.getElementById('userStatus').innerHTML = data.is_verified ? 
+                '<span class="badge bg-success">Verified</span>' : 
+                '<span class="badge bg-warning">Pending</span>';
+            document.getElementById('userRole').textContent = data.is_admin ? 'Administrator' : 'User';
+            document.getElementById('userJoined').textContent = new Date(data.created_at).toLocaleDateString();
+            document.getElementById('userDownloads').textContent = data.downloads_count;
+            document.getElementById('userPayments').textContent = data.payments_count;
+            document.getElementById('userLastLogin').textContent = data.last_login ? 
+                new Date(data.last_login).toLocaleString() : 'Never';
+            
+            new bootstrap.Modal(document.getElementById('viewUserModal')).show();
+        });
+}
+
+function toggleAdmin(userId, isAdmin) {
+    if (confirm(`Are you sure you want to ${isAdmin ? 'remove' : 'grant'} admin privileges?`)) {
+        fetch(`/admin/users/${userId}/toggle-admin`, { method: 'POST' })
+            .then(() => location.reload());
+    }
+}
+
+function verifyUser(userId) {
+    if (confirm('Are you sure you want to verify this user?')) {
+        fetch(`/admin/users/${userId}/verify`, { method: 'POST' })
+            .then(() => location.reload());
+    }
+}
+
+function deleteUser(userId, email) {
+    if (confirm(`Are you sure you want to delete user ${email}? This action cannot be undone.`)) {
+        fetch(`/admin/users/${userId}/delete`, { method: 'POST' })
+            .then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}

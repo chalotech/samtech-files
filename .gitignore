@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -22,7 +23,6 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
 
 # IDE
@@ -31,22 +31,22 @@ ENV/
 *.swp
 *.swo
 
-# Flask
-instance/
-.webassets-cache
-
 # Database
 *.db
 *.sqlite
 *.sqlite3
 
-# Logs
-logs/
-*.log
-
 # Environment variables
 .env
-.env.*
+
+# Logs
+*.log
+
+# Media files
+samtech/static/images/brands/*
+!samtech/static/images/brands/brand-placeholder.svg
+samtech/static/images/firmware/*
+!samtech/static/images/firmware/firmware-placeholder.svg
 
 # OS
 .DS_Store
