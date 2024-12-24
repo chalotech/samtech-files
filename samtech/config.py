@@ -15,6 +15,8 @@ class Config:
     
     # Database configuration
     DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///samtech.db')
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     
     # Set the database URL
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
@@ -24,6 +26,10 @@ class Config:
         'pool_pre_ping': True,
         'pool_recycle': 300,
     }
+    
+    # Uploads configuration
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
     # Email configuration
     MAIL_SERVER = os.getenv('MAIL_SERVER')

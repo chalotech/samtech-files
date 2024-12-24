@@ -47,6 +47,8 @@ samtech/static/images/brands/*
 !samtech/static/images/brands/brand-placeholder.svg
 samtech/static/images/firmware/*
 !samtech/static/images/firmware/firmware-placeholder.svg
+uploads/*
+!uploads/.gitkeep
 
 # OS
 .DS_Store
