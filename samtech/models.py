@@ -2,6 +2,7 @@ from . import db
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import TEXT
+from sqlalchemy.orm import relationship
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -13,6 +14,11 @@ class User(UserMixin, db.Model):
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     verification_code = db.Column(db.String(6))
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    firmwares = relationship('Firmware', backref='creator', lazy=True)
+    payments = relationship('Payment', backref='user', lazy=True)
+    withdrawals = relationship('Withdrawal', backref='user', lazy=True)
 
 class Brand(db.Model):
     __tablename__ = 'brands'
@@ -20,8 +26,13 @@ class Brand(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     icon_path = db.Column(db.String(255))
     description = db.Column(TEXT)
-    firmwares = db.relationship('Firmware', backref='brand', lazy=True, cascade='all, delete-orphan')
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships with cascade
+    firmwares = relationship('Firmware', 
+                           backref='brand', 
+                           lazy=True, 
+                           cascade='all, delete-orphan')
 
 class Firmware(db.Model):
     __tablename__ = 'firmwares'
@@ -36,6 +47,12 @@ class Firmware(db.Model):
     downloads = db.Column(db.Integer, default=0, nullable=False)
     added_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships with cascade
+    payments = relationship('Payment', 
+                          backref='firmware', 
+                          lazy=True, 
+                          cascade='all, delete-orphan')
 
 class Payment(db.Model):
     __tablename__ = 'payments'
@@ -43,15 +60,12 @@ class Payment(db.Model):
     reference = db.Column(db.String(100), unique=True, nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     phone_number = db.Column(db.String(20), nullable=False)
-    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id', ondelete='SET NULL'))
+    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id', ondelete='CASCADE'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     status = db.Column(db.String(20), default='pending', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     completed_at = db.Column(db.DateTime)
     withdrawn = db.Column(db.Boolean, default=False, nullable=False)
-    
-    firmware = db.relationship('Firmware', backref='payments')
-    user = db.relationship('User', backref='payments')
 
 class Withdrawal(db.Model):
     __tablename__ = 'withdrawals'
@@ -62,5 +76,3 @@ class Withdrawal(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     completed_at = db.Column(db.DateTime)
-    
-    user = db.relationship('User', backref='withdrawals')

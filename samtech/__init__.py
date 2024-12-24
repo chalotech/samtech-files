@@ -51,6 +51,10 @@ def create_app():
             db.create_all()
             app.logger.info("Database tables created/verified successfully")
             
+            # Initialize default data
+            from .init_db import init_db
+            init_db(app)
+            
             # Check if admin user exists
             admin = User.query.filter_by(is_admin=True).first()
             if not admin:
