@@ -2,9 +2,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from . import db
-from .models import Firmware, Brand, Payment, DownloadToken
+from .models import Firmware, Brand, Payment, DownloadToken, User, Withdrawal
 from datetime import datetime
 import os
+from sqlalchemy import func
 
 main = Blueprint('main', __name__)
 
@@ -45,8 +46,27 @@ def admin():
     if not current_user.is_admin:
         flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('main.index'))
+    
+    # Get statistics
+    stats = {
+        'firmware_count': Firmware.query.count(),
+        'user_count': User.query.count(),
+        'download_count': db.session.query(func.sum(Firmware.downloads)).scalar() or 0,
+        'total_revenue': db.session.query(func.sum(Payment.amount)).filter_by(status='completed').scalar() or 0
+    }
+    
+    # Get data for tables
+    firmwares = Firmware.query.all()
     brands = Brand.query.all()
-    return render_template('admin.html', brands=brands)
+    users = User.query.all()
+    payments = Payment.query.order_by(Payment.created_at.desc()).limit(100).all()
+    
+    return render_template('admin.html',
+                         stats=stats,
+                         firmwares=firmwares,
+                         brands=brands,
+                         users=users,
+                         payments=payments)
 
 @main.route('/admin/firmware/add', methods=['GET', 'POST'])
 @login_required
@@ -157,6 +177,57 @@ def edit_firmware(firmware_id):
     
     brands = Brand.query.all()
     return render_template('edit_firmware.html', firmware=firmware, brands=brands)
+
+@main.route('/admin/brand/add', methods=['POST'])
+@login_required
+def add_brand():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    try:
+        name = request.form.get('name')
+        if not name:
+            flash('Brand name is required', 'error')
+            return redirect(url_for('main.admin'))
+        
+        brand = Brand(name=name)
+        db.session.add(brand)
+        db.session.commit()
+        
+        flash('Brand added successfully', 'success')
+    except Exception as e:
+        current_app.logger.error(f"Error adding brand: {str(e)}")
+        flash('Error adding brand. Please try again.', 'error')
+        db.session.rollback()
+    
+    return redirect(url_for('main.admin'))
+
+@main.route('/admin/brand/<int:brand_id>/edit', methods=['POST'])
+@login_required
+def edit_brand(brand_id):
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    try:
+        brand = Brand.query.get_or_404(brand_id)
+        name = request.form.get('name')
+        
+        if not name:
+            flash('Brand name is required', 'error')
+            return redirect(url_for('main.admin'))
+        
+        brand.name = name
+        db.session.commit()
+        
+        flash('Brand updated successfully', 'success')
+    except Exception as e:
+        current_app.logger.error(f"Error updating brand: {str(e)}")
+        flash('Error updating brand. Please try again.', 'error')
+        db.session.rollback()
+    
+    return redirect(url_for('main.admin'))
 
 @main.route('/download/<token>')
 @login_required
