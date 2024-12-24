@@ -157,13 +157,13 @@
 function editBrand(id, name, description) {
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_description').value = description;
-    document.getElementById('editBrandForm').action = "{{ url_for('admin.manage_brands') }}/" + id + "/edit";
+    document.getElementById('editBrandForm').action = "{{ url_for('admin.edit_brand', id=0) }}".replace('0', id);
     new bootstrap.Modal(document.getElementById('editBrandModal')).show();
 }
 
 function deleteBrand(id, name) {
     document.getElementById('deleteBrandName').textContent = name;
-    document.getElementById('deleteBrandForm').action = "{{ url_for('admin.manage_brands') }}/" + id + "/delete";
+    document.getElementById('deleteBrandForm').action = "{{ url_for('admin.delete_brand', id=0) }}".replace('0', id);
     new bootstrap.Modal(document.getElementById('deleteBrandModal')).show();
 }
 </script>

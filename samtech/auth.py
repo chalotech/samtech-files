@@ -94,15 +94,18 @@ def register():
 def verify_email():
     if request.method == 'POST':
         code = request.form.get('code')
-        user = User.query.filter_by(verification_code=code).first()
+        if not code:
+            flash('Please enter the verification code.', 'error')
+            return redirect(url_for('auth.verify_email'))
 
+        user = User.query.filter_by(verification_code=code).first()
         if not user:
             flash('Invalid verification code.', 'error')
             return redirect(url_for('auth.verify_email'))
 
         if user.verification_code_expiry < datetime.utcnow():
             flash('Verification code has expired. Please request a new one.', 'error')
-            return redirect(url_for('auth.verify_email'))
+            return redirect(url_for('auth.resend_verification'))
 
         user.is_verified = True
         user.verification_code = None
@@ -114,27 +117,40 @@ def verify_email():
 
     return render_template('auth/verify_email.html')
 
-@auth.route('/resend-verification', methods=['POST'])
+@auth.route('/resend-verification', methods=['GET', 'POST'])
 def resend_verification():
-    email = request.form.get('email')
-    user = User.query.filter_by(email=email).first()
+    if request.method == 'POST':
+        email = request.form.get('email')
+        if not email:
+            flash('Please enter your email address.', 'error')
+            return redirect(url_for('auth.resend_verification'))
 
-    if not user:
-        flash('Email not found.', 'error')
-        return redirect(url_for('auth.verify_email'))
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            flash('No account found with this email address.', 'error')
+            return redirect(url_for('auth.resend_verification'))
 
-    if user.is_verified:
-        flash('Email already verified.', 'info')
-        return redirect(url_for('auth.login'))
+        if user.is_verified:
+            flash('This email is already verified.', 'success')
+            return redirect(url_for('auth.login'))
 
-    verification_code = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-    user.verification_code = verification_code
-    user.verification_code_expiry = datetime.utcnow() + timedelta(hours=24)
-    db.session.commit()
+        verification_code = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        verification_code_expiry = datetime.utcnow() + timedelta(hours=24)
 
-    send_verification_email(email, verification_code)
-    flash('Verification email resent. Please check your inbox.', 'success')
-    return redirect(url_for('auth.verify_email'))
+        user.verification_code = verification_code
+        user.verification_code_expiry = verification_code_expiry
+        db.session.commit()
+
+        try:
+            send_verification_email(email, verification_code)
+            flash('A new verification code has been sent to your email.', 'success')
+            return redirect(url_for('auth.verify_email'))
+        except Exception as e:
+            current_app.logger.error(f"Error sending verification email: {str(e)}")
+            flash('An error occurred while sending the verification code.', 'error')
+            return redirect(url_for('auth.resend_verification'))
+
+    return render_template('auth/resend_verification.html')
 
 @auth.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
