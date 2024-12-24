@@ -61,29 +61,13 @@ class Brand(db.Model):
     __tablename__ = 'brands'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
-    logo_path = db.Column(db.String(255), nullable=True)
-    description = db.Column(db.Text, nullable=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('brand_categories.id'), nullable=True)
-    website = db.Column(db.String(255), nullable=True)
-    contact_email = db.Column(db.String(100), nullable=True)
-    support_phone = db.Column(db.String(20), nullable=True)
-    is_featured = db.Column(db.Boolean, default=False)
-    status = db.Column(db.String(20), default='active')  # active, inactive, pending
+    description = db.Column(db.Text)
+    logo = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    firmwares = db.relationship('Firmware', backref='brand', lazy=True)
-    
-    def __init__(self, name, description=None, logo_path=None, category_id=None,
-                 website=None, contact_email=None, support_phone=None):
-        self.name = name
-        self.description = description
-        self.logo_path = logo_path
-        self.category_id = category_id
-        self.website = website
-        self.contact_email = contact_email
-        self.support_phone = support_phone
+    firmwares = db.relationship('Firmware', back_populates='brand', lazy=True)
 
 class Firmware(db.Model):
     __tablename__ = 'firmwares'
@@ -103,7 +87,7 @@ class Firmware(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    brand = db.relationship('Brand', backref='firmwares')
+    brand = db.relationship('Brand', back_populates='firmwares')
     payments = db.relationship('Payment', backref='firmware', lazy=True)
     downloads = db.relationship('DownloadToken', backref='firmware', lazy=True)
 
