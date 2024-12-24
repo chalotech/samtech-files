@@ -1,0 +1,98 @@
+2024-12-23 21:32:34,430 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
+2024-12-23 21:32:34,608 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
+2024-12-23 21:32:34,625 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
+2024-12-23 21:32:34,626 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:12]
+2024-12-23 21:32:34,655 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: users.username
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password AS users_password, users.is_admin AS users_is_admin, users.is_verified AS users_is_verified, users.verification_code AS users_verification_code, users.verification_code_expiry AS users_verification_code_expiry, users.last_login AS users_last_login, users.created_at AS users_created_at, users.updated_at AS users_updated_at 
+FROM users 
+WHERE users.username = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('samtech', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 06:22:28,378 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
+2024-12-24 06:22:28,558 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
+2024-12-24 06:22:28,629 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
+2024-12-24 06:22:28,646 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:12]
+2024-12-24 06:22:29,053 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: users.reset_token
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password AS users_password, users.is_admin AS users_is_admin, users.is_verified AS users_is_verified, users.verification_code AS users_verification_code, users.verification_code_expiry AS users_verification_code_expiry, users.reset_token AS users_reset_token, users.reset_token_expiry AS users_reset_token_expiry, users.last_login AS users_last_login, users.created_at AS users_created_at, users.updated_at AS users_updated_at 
+FROM users 
+WHERE users.username = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('samtech', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 06:53:47,595 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
+2024-12-24 06:53:47,731 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
+2024-12-24 06:53:47,771 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
+2024-12-24 06:53:47,783 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:12]
+2024-12-24 06:53:47,886 ERROR: Database initialization error: Error creating backref 'brand' on relationship 'Brand.firmwares': property of that name exists on mapper 'Mapper[Firmware(firmwares)]' [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 09:36:41,333 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
+2024-12-24 09:36:41,400 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
+2024-12-24 09:36:41,493 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
+2024-12-24 09:36:41,539 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
+2024-12-24 09:36:41,542 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
+2024-12-24 09:36:41,576 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
+2024-12-24 09:36:41,578 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
+2024-12-24 09:36:41,588 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
+2024-12-24 09:36:41,591 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:41,599 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:41,604 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
+2024-12-24 09:36:41,604 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:41,720 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
+2024-12-24 09:36:41,774 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
+2024-12-24 09:36:41,860 INFO: Admin user created successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:25]
+2024-12-24 09:36:41,861 INFO: Admin user already exists [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:27]
+2024-12-24 09:36:41,861 INFO: Creating default brands... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:31]
+2024-12-24 09:36:41,861 INFO: Creating default brands... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:31]
+2024-12-24 09:36:41,864 INFO: Admin user already exists [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:27]
+2024-12-24 09:36:41,864 INFO: Creating default brands... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:31]
+2024-12-24 09:36:41,869 ERROR: Error during database initialization: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:61]
+2024-12-24 09:36:41,870 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 09:36:41,875 ERROR: Error during database initialization: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:61]
+2024-12-24 09:36:41,876 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 09:36:41,877 ERROR: Error during database initialization: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:61]
+2024-12-24 09:36:41,878 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 09:36:41,886 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
+2024-12-24 09:36:41,887 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:42,026 INFO: Admin user already exists [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:27]
+2024-12-24 09:36:42,026 INFO: Creating default brands... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:31]
+2024-12-24 09:36:42,908 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:42,918 INFO: Admin user already exists [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:27]
+2024-12-24 09:36:42,919 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
+2024-12-24 09:36:42,920 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:42,924 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]

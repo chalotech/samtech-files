@@ -1,4 +1,17 @@
-2024-12-23 20:06:28,898 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
-2024-12-23 20:06:28,961 INFO: Checking for initial data... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:9]
-2024-12-23 20:06:29,086 INFO: Database initialization completed [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:70]
-2024-12-23 20:06:29,972 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
+2024-12-24 09:36:43,309 ERROR: Error during database initialization: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:61]
+2024-12-24 09:36:43,310 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 09:36:43,526 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:43,527 INFO: Admin user already exists [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:27]
+2024-12-24 09:36:43,528 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]

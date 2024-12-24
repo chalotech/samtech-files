@@ -1,27 +1,34 @@
-2024-12-23 20:06:28,961 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
-2024-12-23 20:06:28,966 INFO: Checking for initial data... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:9]
-2024-12-23 20:06:29,027 INFO: Database initialization completed [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:70]
-2024-12-23 20:06:29,043 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
-2024-12-23 20:06:29,083 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
-2024-12-23 20:06:29,087 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
-2024-12-23 20:06:29,088 INFO: Checking for initial data... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:9]
-2024-12-23 20:06:29,136 INFO: Database initialization completed [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:70]
-2024-12-23 20:06:29,632 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
-2024-12-23 20:06:29,698 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:29,699 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:29,704 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:30]
-2024-12-23 20:06:29,723 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:29,818 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:29,818 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:29,857 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
-2024-12-23 20:06:29,859 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
-2024-12-23 20:06:29,860 INFO: Checking for initial data... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:9]
-2024-12-23 20:06:29,893 INFO: Database initialization completed [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:70]
-2024-12-23 20:06:30,050 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:30,050 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:30,312 INFO: Checking database status... [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:50]
-2024-12-23 20:06:30,318 INFO: Database tables created/verified successfully [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:52]
-2024-12-23 20:06:30,319 INFO: Checking for initial data... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:9]
-2024-12-23 20:06:30,362 INFO: Database initialization completed [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:70]
-2024-12-23 20:06:30,450 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
-2024-12-23 20:06:30,986 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
+2024-12-24 09:36:43,338 ERROR: Error during database initialization: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:61]
+2024-12-24 09:36:43,339 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 09:36:43,341 ERROR: Error during database initialization: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:61]
+2024-12-24 09:36:43,342 ERROR: Database initialization error: (sqlite3.OperationalError) no such column: brands.logo
+[SQL: SELECT brands.id AS brands_id, brands.name AS brands_name, brands.description AS brands_description, brands.logo AS brands_logo, brands.created_at AS brands_created_at, brands.updated_at AS brands_updated_at 
+FROM brands 
+WHERE brands.name = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('Samsung', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in /home/chalo/CascadeProjects/samtech_files/samtech/__init__.py:64]
+2024-12-24 09:36:43,512 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:43,514 INFO: Admin user already exists [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:27]
+2024-12-24 09:36:43,515 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]
+2024-12-24 09:36:43,559 INFO: Creating admin user... [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:11]
+2024-12-24 09:36:43,562 INFO: Admin user already exists [in /home/chalo/CascadeProjects/samtech_files/samtech/init_db.py:27]
+2024-12-24 09:36:43,562 INFO: Samtech startup [in /home/chalo/CascadeProjects/samtech_files/run.py:28]

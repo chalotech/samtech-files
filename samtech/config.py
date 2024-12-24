@@ -14,30 +14,10 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     
     # Database configuration
-    DATABASE_URL = os.getenv('DATABASE_URL')
+    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///samtech.db')
     
-    # Explicitly handle database URL
-    if DATABASE_URL:
-        # Print the first part of the URL for debugging (hide credentials)
-        url_start = DATABASE_URL.split('@')[0] if '@' in DATABASE_URL else DATABASE_URL
-        print(f"Original DATABASE_URL start: {url_start[:10]}...", file=sys.stderr)
-        
-        # Handle template string error
-        if DATABASE_URL.startswith('${'):
-            print("Error: DATABASE_URL appears to be a template string", file=sys.stderr)
-            DATABASE_URL = None
-        # Handle postgres:// URLs
-        elif DATABASE_URL.startswith('postgres://'):
-            DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-            print("Converted postgres:// to postgresql://", file=sys.stderr)
-    
-    # Set the final database URL
-    if DATABASE_URL:
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL
-        print(f"Using database type: {SQLALCHEMY_DATABASE_URI.split(':')[0]}", file=sys.stderr)
-    else:
-        print("No valid DATABASE_URL found, using SQLite", file=sys.stderr)
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///samtech.db'
+    # Set the database URL
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
