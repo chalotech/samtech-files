@@ -6,17 +6,18 @@ import secrets
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    username = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    email_verified = db.Column(db.Boolean, default=False, nullable=False)
-    verification_code = db.Column(db.String(6))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    email = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
+    is_admin = db.Column(db.Boolean, default=False)
+    is_verified = db.Column(db.Boolean, default=False)
+    verification_code = db.Column(db.String(6), unique=True, nullable=True)
+    verification_code_expiry = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     firmwares = db.relationship('Firmware', backref='creator', lazy=True)
     payments = db.relationship('Payment', backref='user', lazy=True)
+    downloads = db.relationship('DownloadToken', backref='user', lazy=True)
 
 class Brand(db.Model):
     __tablename__ = 'brands'
