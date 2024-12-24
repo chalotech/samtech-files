@@ -1,17 +1,14 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify, send_file
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
+from datetime import datetime
+from PIL import Image
+import os
+import uuid
 from . import db
 from .models import Brand, Firmware, User, Payment
-import os
-from datetime import datetime, timedelta
-from PIL import Image
-import uuid
-import csv
-from io import StringIO, BytesIO
-from openpyxl import Workbook
 
-admin = Blueprint('admin', __name__, url_prefix='/admin')
+admin = Blueprint('admin', __name__)
 
 def save_logo(file):
     """Save brand logo and return the file path"""
@@ -564,18 +561,16 @@ def delete_firmware(id):
 @admin.route('/firmware/<int:id>')
 @login_required
 def get_firmware(id):
+    """Get firmware details for editing"""
     if not current_user.is_admin:
-        return jsonify({'status': 'error', 'message': 'Access denied'})
+        return jsonify({'error': 'Access denied'}), 403
     
     firmware = Firmware.query.get_or_404(id)
     return jsonify({
-        'status': 'success',
-        'firmware': {
-            'name': firmware.name,
-            'version': firmware.version,
-            'description': firmware.description,
-            'features': firmware.features,
-            'brand_id': firmware.brand_id,
-            'price': firmware.price
-        }
+        'name': firmware.name,
+        'version': firmware.version,
+        'description': firmware.description,
+        'features': firmware.features,
+        'brand_id': firmware.brand_id,
+        'price': firmware.price
     })
