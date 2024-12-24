@@ -11,7 +11,7 @@ import csv
 from io import StringIO, BytesIO
 from openpyxl import Workbook
 
-admin = Blueprint('admin', __name__)
+admin = Blueprint('admin', __name__, url_prefix='/admin')
 
 def save_logo(file):
     """Save brand logo and return the file path"""
@@ -160,7 +160,7 @@ def delete_brand(id):
     
     return redirect(url_for('admin.manage_brands'))
 
-@admin.route('/admin/users')
+@admin.route('/users')
 @login_required
 def manage_users():
     if not current_user.is_admin:
@@ -202,7 +202,7 @@ def manage_users():
     
     return render_template('admin/users.html', users=users, pagination=pagination)
 
-@admin.route('/admin/users/<int:id>')
+@admin.route('/users/<int:id>')
 @login_required
 def get_user(id):
     if not current_user.is_admin:
@@ -220,7 +220,7 @@ def get_user(id):
         'payments_count': len(user.payments)
     })
 
-@admin.route('/admin/users/<int:id>/toggle-admin', methods=['POST'])
+@admin.route('/users/<int:id>/toggle-admin', methods=['POST'])
 @login_required
 def toggle_admin(id):
     if not current_user.is_admin:
@@ -240,7 +240,7 @@ def toggle_admin(id):
     flash(f"Admin privileges {'granted to' if user.is_admin else 'removed from'} {user.email}", 'success')
     return redirect(url_for('admin.manage_users'))
 
-@admin.route('/admin/users/<int:id>/verify', methods=['POST'])
+@admin.route('/users/<int:id>/verify', methods=['POST'])
 @login_required
 def verify_user(id):
     if not current_user.is_admin:
@@ -256,7 +256,7 @@ def verify_user(id):
     flash(f'User {user.email} has been verified.', 'success')
     return redirect(url_for('admin.manage_users'))
 
-@admin.route('/admin/users/<int:id>/delete', methods=['POST'])
+@admin.route('/users/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_user(id):
     if not current_user.is_admin:
@@ -276,7 +276,7 @@ def delete_user(id):
     flash(f'User {user.email} has been deleted.', 'success')
     return redirect(url_for('admin.manage_users'))
 
-@admin.route('/admin/users/export', methods=['POST'])
+@admin.route('/users/export', methods=['POST'])
 @login_required
 def export_users():
     if not current_user.is_admin:
