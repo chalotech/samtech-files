@@ -1,8 +1,9 @@
 from . import db
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy.orm import relationship
+import secrets
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -40,7 +41,7 @@ class Firmware(db.Model):
     model = db.Column(db.String(100), nullable=False)
     version = db.Column(db.String(50), nullable=False)
     description = db.Column(TEXT)
-    file_path = db.Column(db.String(255), nullable=False)
+    gmail_link = db.Column(db.String(500), nullable=False)  # Store Gmail sharing link
     icon_path = db.Column(db.String(255))
     price = db.Column(db.Numeric(10, 2), default=0.0, nullable=False)
     brand_id = db.Column(db.Integer, db.ForeignKey('brands.id', ondelete='CASCADE'), nullable=False)
@@ -53,6 +54,10 @@ class Firmware(db.Model):
                           backref='firmware', 
                           lazy=True, 
                           cascade='all, delete-orphan')
+    download_links = relationship('DownloadLink',
+                                backref='firmware',
+                                lazy=True,
+                                cascade='all, delete-orphan')
 
 class Payment(db.Model):
     __tablename__ = 'payments'
@@ -66,6 +71,47 @@ class Payment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     completed_at = db.Column(db.DateTime)
     withdrawn = db.Column(db.Boolean, default=False, nullable=False)
+
+class DownloadLink(db.Model):
+    __tablename__ = 'download_links'
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    firmware_id = db.Column(db.Integer, db.ForeignKey('firmwares.id', ondelete='CASCADE'), nullable=False)
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id', ondelete='CASCADE'), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    used_at = db.Column(db.DateTime)
+    
+    @staticmethod
+    def generate_token():
+        return secrets.token_urlsafe(32)
+    
+    @staticmethod
+    def create_for_payment(payment, expiry_hours=24):
+        token = DownloadLink.generate_token()
+        expires_at = datetime.utcnow() + timedelta(hours=expiry_hours)
+        
+        link = DownloadLink(
+            token=token,
+            firmware_id=payment.firmware_id,
+            payment_id=payment.id,
+            expires_at=expires_at
+        )
+        db.session.add(link)
+        db.session.commit()
+        return link
+    
+    def is_valid(self):
+        return (
+            not self.used and
+            datetime.utcnow() <= self.expires_at
+        )
+    
+    def mark_as_used(self):
+        self.used = True
+        self.used_at = datetime.utcnow()
+        db.session.commit()
 
 class Withdrawal(db.Model):
     __tablename__ = 'withdrawals'

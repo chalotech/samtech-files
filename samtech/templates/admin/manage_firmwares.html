@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Manage Firmwares</h2>
+        <a href="{{ url_for('admin.add_firmware') }}" class="btn btn-primary">Add New Firmware</a>
+    </div>
+
+    {% if firmwares.items %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Brand</th>
+                    <th>Model</th>
+                    <th>Version</th>
+                    <th>Price</th>
+                    <th>Downloads</th>
+                    <th>Added</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for firmware in firmwares.items %}
+                <tr>
+                    <td>{{ firmware.brand.name }}</td>
+                    <td>{{ firmware.model }}</td>
+                    <td>{{ firmware.version }}</td>
+                    <td>KES {{ "%.2f"|format(firmware.price) }}</td>
+                    <td>{{ firmware.downloads }}</td>
+                    <td>{{ firmware.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-info" 
+                                    onclick="copyGmailLink('{{ firmware.gmail_link }}')">
+                                Copy Link
+                            </button>
+                            <form action="{{ url_for('admin.delete_firmware', id=firmware.id) }}" 
+                                  method="POST" class="d-inline"
+                                  onsubmit="return confirm('Are you sure you want to delete this firmware?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if firmwares.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('admin.manage_firmwares', page=firmwares.prev_num) }}">Previous</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+            </li>
+            {% endif %}
+
+            {% for page_num in firmwares.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                {% if page_num %}
+                    {% if page_num == firmwares.page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.manage_firmwares', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if firmwares.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('admin.manage_firmwares', page=firmwares.next_num) }}">Next</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Next</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% else %}
+    <div class="alert alert-info">
+        No firmwares found. Click the "Add New Firmware" button to add one.
+    </div>
+    {% endif %}
+</div>
+
+{% block scripts %}
+<script>
+function copyGmailLink(link) {
+    navigator.clipboard.writeText(link).then(function() {
+        alert('Gmail link copied to clipboard!');
+    }).catch(function(err) {
+        alert('Error copying link: ' + err);
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,11 +1,13 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime
 import requests
 import base64
 import json
 import os
 from . import db
-from .models import Payment, Withdrawal
+from .models import Payment, Withdrawal, DownloadLink
+from flask_mail import Message
+from . import mail
 
 mpesa = Blueprint('mpesa', __name__)
 
@@ -198,59 +200,74 @@ def initiate_b2c_payment():
 
 @mpesa.route('/callback', methods=['POST'])
 def callback():
-    """Handle M-Pesa payment callback"""
+    """Handle M-Pesa callback"""
     data = request.get_json()
     
-    # Extract payment details from callback data
-    body = data.get('Body', {})
-    result = body.get('stkCallback', {})
-    merchant_request_id = result.get('MerchantRequestID')
+    # Extract callback data
+    result_code = data.get('ResultCode')
+    reference = data.get('MerchantRequestID')
     
-    # Find payment reference from merchant request ID
-    reference = None
-    for ref, status in payment_status.items():
-        if status.get('merchant_request_id') == merchant_request_id:
-            reference = ref
-            break
-    
-    if not reference:
-        return jsonify({'error': 'Payment not found'}), 404
-    
-    # Check if payment exists in database
+    # Find the payment
     payment = Payment.query.filter_by(reference=reference).first()
     if not payment:
-        # Parse reference to get firmware_id and user_id
-        try:
-            _, firmware_id, user_id = reference.split('_')
-            firmware_id = int(firmware_id[2:])  # Remove 'FW' prefix
-            user_id = int(user_id)
-        except ValueError:
-            return jsonify({'error': 'Invalid reference format'}), 400
-            
-        # Create new payment record
-        payment = Payment(
-            reference=reference,
-            amount=float(result.get('Amount', 0)),
-            phone_number=result.get('PhoneNumber', ''),
-            firmware_id=firmware_id,
-            user_id=user_id,
-            status='pending'
-        )
-        db.session.add(payment)
+        current_app.logger.error(f"Payment not found for reference: {reference}")
+        return jsonify({'status': 'error', 'message': 'Payment not found'}), 404
     
-    # Update payment status
-    result_code = result.get('ResultCode', 1)
-    if result_code == 0:
+    if result_code == 0:  # Success
+        # Update payment status
         payment.status = 'completed'
         payment.completed_at = datetime.utcnow()
-        payment_status[reference]['completed'] = True
+        
+        # Create download link
+        download_link = DownloadLink.create_for_payment(payment)
+        
+        # Generate download URL
+        download_url = request.host_url.rstrip('/') + '/download/' + download_link.token
+        
+        # Send email with download link
+        try:
+            msg = Message(
+                'Your Firmware Download Link',
+                sender=current_app.config['MAIL_DEFAULT_SENDER'],
+                recipients=[payment.user.email]
+            )
+            msg.body = f'''Thank you for your payment!
+
+Your firmware download is ready. Click the link below to download:
+{download_url}
+
+Note: This link will expire in 24 hours and can only be used once.
+
+Best regards,
+Samtech Team'''
+            
+            mail.send(msg)
+            current_app.logger.info(f"Download link email sent to {payment.user.email}")
+        except Exception as e:
+            current_app.logger.error(f"Failed to send email: {str(e)}")
+        
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Payment completed'})
     else:
+        # Update payment status to failed
         payment.status = 'failed'
-        payment_status[reference]['failed'] = True
-        payment_status[reference]['error_message'] = result.get('ResultDesc', 'Payment failed')
+        db.session.commit()
+        return jsonify({'status': 'error', 'message': 'Payment failed'}), 400
+
+@mpesa.route('/status/<reference>', methods=['GET'])
+def check_status(reference):
+    """Check payment status"""
+    payment = Payment.query.filter_by(reference=reference).first()
+    if not payment:
+        return jsonify({'status': 'error', 'message': 'Payment not found'}), 404
     
-    db.session.commit()
-    return jsonify({'status': 'success'})
+    return jsonify({
+        'status': payment.status,
+        'reference': payment.reference,
+        'amount': float(payment.amount),
+        'created_at': payment.created_at.isoformat(),
+        'completed_at': payment.completed_at.isoformat() if payment.completed_at else None
+    })
 
 @mpesa.route('/result', methods=['POST'])
 def b2c_result():
@@ -296,12 +313,3 @@ def b2c_timeout():
     # Log timeout event
     print("B2C timeout occurred")
     return jsonify({'status': 'timeout'})
-
-@mpesa.route('/status', methods=['GET'])
-def check_status():
-    """Check payment status"""
-    reference = request.args.get('reference')
-    if not reference or reference not in payment_status:
-        return jsonify({'error': 'Invalid reference'}), 400
-    
-    return jsonify(payment_status[reference])

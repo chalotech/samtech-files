@@ -75,4 +75,10 @@ def create_app():
     from .mpesa import mpesa as mpesa_blueprint
     app.register_blueprint(mpesa_blueprint, url_prefix='/mpesa')
     
+    from .admin import admin as admin_blueprint
+    app.register_blueprint(admin_blueprint)
+    
+    from .downloads import downloads as downloads_blueprint
+    app.register_blueprint(downloads_blueprint)
+    
     return app
