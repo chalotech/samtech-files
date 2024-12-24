@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from . import db
-from .models import Firmware, Brand, Payment, DownloadToken, User
+from .models import Firmware, Brand, Payment, DownloadToken
 from datetime import datetime
 import os
 
@@ -100,6 +100,63 @@ def add_firmware():
     
     brands = Brand.query.all()
     return render_template('add_firmware.html', brands=brands)
+
+@main.route('/admin/firmware/<int:firmware_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_firmware(firmware_id):
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    
+    firmware = Firmware.query.get_or_404(firmware_id)
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            brand_id = request.form.get('brand_id')
+            model = request.form.get('model')
+            version = request.form.get('version')
+            description = request.form.get('description')
+            gmail_link = request.form.get('gmail_link')
+            price = request.form.get('price')
+            
+            # Validate required fields
+            if not all([brand_id, model, version, gmail_link, price]):
+                flash('Please fill in all required fields', 'error')
+                return redirect(url_for('main.edit_firmware', firmware_id=firmware_id))
+            
+            # Handle icon upload
+            icon_file = request.files.get('firmware_icon')
+            if icon_file:
+                icon_path = save_icon(icon_file)
+                if icon_path:
+                    # Delete old icon if it exists
+                    if firmware.icon_path:
+                        old_icon_path = os.path.join(current_app.root_path, 'static', firmware.icon_path)
+                        if os.path.exists(old_icon_path):
+                            os.remove(old_icon_path)
+                    firmware.icon_path = icon_path
+            
+            # Update firmware
+            firmware.brand_id = brand_id
+            firmware.model = model
+            firmware.version = version
+            firmware.description = description
+            firmware.gmail_link = gmail_link
+            firmware.price = float(price)
+            
+            db.session.commit()
+            
+            flash('Firmware updated successfully', 'success')
+            return redirect(url_for('main.brand', brand_id=brand_id))
+            
+        except Exception as e:
+            current_app.logger.error(f"Error updating firmware: {str(e)}")
+            flash('Error updating firmware. Please try again.', 'error')
+            db.session.rollback()
+    
+    brands = Brand.query.all()
+    return render_template('edit_firmware.html', firmware=firmware, brands=brands)
 
 @main.route('/download/<token>')
 @login_required
