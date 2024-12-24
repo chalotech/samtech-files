@@ -1,12 +1,27 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, abort
 from flask_login import login_required, current_user
-from . import db
-from .models import Brand, Firmware, User, Payment, Withdrawal
 from werkzeug.utils import secure_filename
-from .mpesa import payment_status
+from . import db
+from .models import Firmware, Brand, Payment, DownloadToken, User
+from datetime import datetime
 import os
 
 main = Blueprint('main', __name__)
+
+def save_icon(icon_file):
+    """Save firmware icon and return the path"""
+    if not icon_file:
+        return None
+        
+    filename = secure_filename(icon_file.filename)
+    icon_dir = os.path.join(current_app.root_path, 'static', 'images', 'firmware')
+    os.makedirs(icon_dir, exist_ok=True)
+    
+    icon_path = os.path.join('images', 'firmware', filename)
+    full_path = os.path.join(current_app.root_path, 'static', icon_path)
+    icon_file.save(full_path)
+    
+    return icon_path
 
 @main.route('/')
 def index():
@@ -16,112 +31,129 @@ def index():
 @main.route('/brand/<int:brand_id>')
 def brand(brand_id):
     brand = Brand.query.get_or_404(brand_id)
-    firmwares = Firmware.query.filter_by(brand_id=brand_id).order_by(Firmware.created_at.desc()).all()
+    firmwares = Firmware.query.filter_by(brand_id=brand_id).all()
     return render_template('brand.html', brand=brand, firmwares=firmwares)
 
-@main.route('/add-firmware/<int:brand_id>', methods=['GET', 'POST'])
+@main.route('/firmware/<int:firmware_id>')
+def firmware(firmware_id):
+    firmware = Firmware.query.get_or_404(firmware_id)
+    return render_template('firmware.html', firmware=firmware)
+
+@main.route('/admin')
 @login_required
-def add_firmware(brand_id):
+def admin():
     if not current_user.is_admin:
-        flash('Admin access required')
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
+    brands = Brand.query.all()
+    return render_template('admin.html', brands=brands)
+
+@main.route('/admin/firmware/add', methods=['GET', 'POST'])
+@login_required
+def add_firmware():
+    if not current_user.is_admin:
+        flash('Access denied. Admin privileges required.', 'error')
         return redirect(url_for('main.index'))
     
-    brand = Brand.query.get_or_404(brand_id)
-    
     if request.method == 'POST':
-        model = request.form.get('model')
-        version = request.form.get('version')
-        description = request.form.get('description')
-        price = float(request.form.get('price', 0))
-        firmware_file = request.files.get('firmware_file')
-        firmware_icon = request.files.get('firmware_icon')
-        
-        if firmware_file:
-            filename = secure_filename(firmware_file.filename)
-            file_path = os.path.join('static/firmware_files', filename)
-            firmware_file.save(os.path.join('samtech', file_path))
+        try:
+            # Get form data
+            brand_id = request.form.get('brand_id')
+            model = request.form.get('model')
+            version = request.form.get('version')
+            description = request.form.get('description')
+            gmail_link = request.form.get('gmail_link')
+            price = request.form.get('price')
             
-            icon_path = None
-            if firmware_icon:
-                icon_filename = secure_filename(firmware_icon.filename)
-                icon_path = os.path.join('static/firmware_icons', icon_filename)
-                os.makedirs(os.path.join('samtech/static/firmware_icons'), exist_ok=True)
-                firmware_icon.save(os.path.join('samtech', icon_path))
+            # Validate required fields
+            if not all([brand_id, model, version, gmail_link, price]):
+                flash('Please fill in all required fields', 'error')
+                return redirect(url_for('main.add_firmware'))
             
+            # Handle icon upload
+            icon_file = request.files.get('firmware_icon')
+            icon_path = save_icon(icon_file) if icon_file else None
+            
+            # Create firmware
             firmware = Firmware(
+                brand_id=brand_id,
                 model=model,
                 version=version,
                 description=description,
-                file_path=file_path,
+                gmail_link=gmail_link,
                 icon_path=icon_path,
-                price=price,
-                brand_id=brand_id,
-                added_by=current_user.id
+                price=float(price),
+                added_by=current_user.id,
+                created_at=datetime.utcnow()
             )
             
             db.session.add(firmware)
             db.session.commit()
-            flash('Firmware added successfully')
-            return redirect(url_for('main.brand', brand_id=brand_id))
-    
-    return render_template('add_firmware.html', brand=brand)
-
-@main.route('/edit-firmware/<int:firmware_id>', methods=['GET', 'POST'])
-@login_required
-def edit_firmware(firmware_id):
-    if not current_user.is_admin:
-        flash('Admin access required')
-        return redirect(url_for('main.index'))
-    
-    firmware = Firmware.query.get_or_404(firmware_id)
-    
-    if request.method == 'POST':
-        firmware.model = request.form.get('model')
-        firmware.version = request.form.get('version')
-        firmware.description = request.form.get('description')
-        firmware.price = float(request.form.get('price', 0))
-        
-        firmware_file = request.files.get('firmware_file')
-        firmware_icon = request.files.get('firmware_icon')
-        
-        if firmware_file:
-            filename = secure_filename(firmware_file.filename)
-            file_path = os.path.join('static/firmware_files', filename)
-            firmware_file.save(os.path.join('samtech', file_path))
-            firmware.file_path = file_path
             
-        if firmware_icon:
-            icon_filename = secure_filename(firmware_icon.filename)
-            icon_path = os.path.join('static/firmware_icons', icon_filename)
-            os.makedirs(os.path.join('samtech/static/firmware_icons'), exist_ok=True)
-            firmware_icon.save(os.path.join('samtech', icon_path))
-            firmware.icon_path = icon_path
-        
-        db.session.commit()
-        flash('Firmware updated successfully')
-        return redirect(url_for('main.brand', brand_id=firmware.brand_id))
+            flash('Firmware added successfully', 'success')
+            return redirect(url_for('main.brand', brand_id=brand_id))
+            
+        except Exception as e:
+            current_app.logger.error(f"Error adding firmware: {str(e)}")
+            flash('Error adding firmware. Please try again.', 'error')
+            db.session.rollback()
     
-    return render_template('edit_firmware.html', firmware=firmware)
+    brands = Brand.query.all()
+    return render_template('add_firmware.html', brands=brands)
 
-@main.route('/delete-firmware/<int:firmware_id>')
+@main.route('/download/<token>')
 @login_required
-def delete_firmware(firmware_id):
-    if not current_user.is_admin:
-        flash('Admin access required')
-        return redirect(url_for('main.index'))
+def download_firmware(token):
+    # Find the download token
+    download_token = DownloadToken.query.filter_by(token=token).first_or_404()
     
-    firmware = Firmware.query.get_or_404(firmware_id)
-    brand_id = firmware.brand_id
+    # Check if token is valid
+    if not download_token.is_valid():
+        flash('Download link has expired or has already been used', 'error')
+        return redirect(url_for('main.firmware', firmware_id=download_token.firmware_id))
     
-    try:
-        os.remove(os.path.join('samtech', firmware.file_path))
-    except:
-        pass
+    # Mark token as used
+    if not download_token.use_token():
+        flash('Error processing download token', 'error')
+        return redirect(url_for('main.firmware', firmware_id=download_token.firmware_id))
     
-    db.session.delete(firmware)
+    # Increment download counter
+    firmware = download_token.firmware
+    firmware.downloads += 1
     db.session.commit()
-    flash('Firmware deleted successfully')
-    return redirect(url_for('main.brand', brand_id=brand_id))
+    
+    # Redirect to Gmail link
+    return redirect(firmware.gmail_link)
+
+@main.route('/payment/success/<int:payment_id>')
+@login_required
+def payment_success(payment_id):
+    # Find the payment
+    payment = Payment.query.filter_by(
+        id=payment_id,
+        user_id=current_user.id,
+        status='completed'
+    ).first_or_404()
+    
+    # Generate download token
+    try:
+        download_token = DownloadToken.generate_token(
+            firmware_id=payment.firmware_id,
+            payment_id=payment.id
+        )
+        
+        # Create download URL
+        download_url = url_for('main.download_firmware', 
+                             token=download_token.token,
+                             _external=True)
+        
+        return render_template('payment_success.html',
+                             payment=payment,
+                             download_url=download_url)
+    except Exception as e:
+        current_app.logger.error(f"Error generating download token: {str(e)}")
+        flash('Error generating download link. Please contact support.', 'error')
+        return redirect(url_for('main.firmware', firmware_id=payment.firmware_id))
 
 @main.route('/pay')
 @login_required
@@ -129,57 +161,15 @@ def pay():
     amount = request.args.get('amount', type=float)
     firmware_id = request.args.get('firmware_id', type=int)
     
-    if not amount or not firmware_id:
-        flash('Invalid payment request', 'danger')
+    if not all([amount, firmware_id]):
+        flash('Invalid payment request', 'error')
         return redirect(url_for('main.index'))
     
     firmware = Firmware.query.get_or_404(firmware_id)
-    
-    return render_template('payment.html', 
+    return render_template('pay.html',
                          amount=amount,
                          reference=f'FW{firmware_id}_{current_user.id}',
                          firmware=firmware)
-
-@main.route('/download/<int:firmware_id>')
-@login_required
-def download_firmware(firmware_id):
-    firmware = Firmware.query.get_or_404(firmware_id)
-    
-    # Check if firmware is free
-    if firmware.price == 0:
-        return process_download(firmware)
-        
-    # Check if payment was successful
-    reference = f'FW{firmware_id}_{current_user.id}'
-    payment = payment_status.get(reference, {})
-    
-    if payment.get('completed'):
-        return process_download(firmware)
-    else:
-        flash('Payment required to download this firmware', 'warning')
-        return redirect(url_for('main.pay', amount=firmware.price, firmware_id=firmware.id))
-
-def process_download(firmware):
-    """Process firmware download"""
-    if not firmware.file_path:
-        flash('Firmware file not available', 'danger')
-        return redirect(url_for('main.brand', brand_id=firmware.brand_id))
-        
-    file_path = os.path.join('samtech', 'static', firmware.file_path)
-    if not os.path.exists(file_path):
-        flash('Firmware file not found', 'danger')
-        return redirect(url_for('main.brand', brand_id=firmware.brand_id))
-    
-    # Increment download count
-    firmware.downloads += 1
-    db.session.commit()
-    
-    # Return file for download
-    return send_file(
-        file_path,
-        as_attachment=True,
-        download_name=f"{firmware.model}_v{firmware.version}.bin"
-    )
 
 @main.route('/admin/users')
 @login_required
